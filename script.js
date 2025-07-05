@@ -333,6 +333,10 @@ function initializeApp() {
     // 初期状態の符数制限を設定
     const initialHan = parseInt(hanInput.value);
     adjustFuForHanChange(initialHan);
+    
+    // 役選択モードの初期制限も設定
+    const totalHan = calculateTotalHanFromSelectedYaku();
+    adjustFuForYakuSelection(totalHan);
 }
 
 function setupEventListeners() {
@@ -378,9 +382,20 @@ function handleNumberInput(event) {
         adjustFuForHanChange(newValue);
         
     } else if (target === 'fu' || target === 'fuYaku') {
+        // 特殊役選択時は符数変更を無効化
+        if (target === 'fuYaku' && hasSpecialYaku()) {
+            return; // 特殊役が選択されている場合は符数変更を無効
+        }
+        
         // 符数変更時の制限チェック
-        const hanInputElement = target === 'fu' ? hanInput : document.getElementById('hanInput');
-        const currentHan = parseInt(hanInputElement.value);
+        let currentHan;
+        if (target === 'fu') {
+            // 手動入力モードの場合
+            currentHan = parseInt(hanInput.value);
+        } else {
+            // 役選択モードの場合
+            currentHan = calculateTotalHanFromSelectedYaku();
+        }
         const validFuList = validFuByHan[currentHan] || [];
         
         if (action === 'increase' && currentValue < 110) {
@@ -644,6 +659,9 @@ function handleInputModeChange(event) {
         yakuInputSection.style.display = 'block';
         // 特殊役の処理を適用
         updateFuInputForSpecialYaku();
+        // 一般的な翻数・符数制限を適用
+        const totalHan = calculateTotalHanFromSelectedYaku();
+        adjustFuForYakuSelection(totalHan);
     }
 }
 
