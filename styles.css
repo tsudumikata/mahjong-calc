@@ -171,6 +171,15 @@ body {
     transform: scale(0.95);
 }
 
+.number-btn:disabled,
+.number-btn.disabled {
+    background: #f5f5f5 !important;
+    color: #bbb !important;
+    border-color: #ddd !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+}
+
 .number-input-group input {
     width: 80px;
     height: 44px;

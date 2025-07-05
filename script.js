@@ -245,6 +245,7 @@ const scoreTable = [
     { han: 1, fu: 110, childRon: 3600, childTsumo: "900/1800", parentRon: 5300, parentTsumo: "1800" },
     
     { han: 2, fu: 20, childRon: 1300, childTsumo: "400/700", parentRon: 2000, parentTsumo: "700" },
+    { han: 2, fu: 25, childRon: 1600, childTsumo: "400/800", parentRon: 2400, parentTsumo: "800" },
     { han: 2, fu: 30, childRon: 2000, childTsumo: "500/1000", parentRon: 2900, parentTsumo: "1000" },
     { han: 2, fu: 40, childRon: 2600, childTsumo: "700/1300", parentRon: 3900, parentTsumo: "1300" },
     { han: 2, fu: 50, childRon: 3200, childTsumo: "800/1600", parentRon: 4800, parentTsumo: "1600" },
@@ -274,6 +275,28 @@ const scoreTable = [
     { han: 12, fu: 0, childRon: 24000, childTsumo: "6000/12000", parentRon: 36000, parentTsumo: "12000" },
     { han: 13, fu: 0, childRon: 32000, childTsumo: "8000/16000", parentRon: 48000, parentTsumo: "16000" }
 ];
+
+// 翻数に応じた有効な符数の組み合わせ
+const validFuByHan = {
+    1: [30, 40, 50, 60, 70, 80, 90, 100, 110],
+    2: [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110],
+    3: [20, 30, 40, 50, 60],
+    4: [20, 30],
+    5: [], // 満貫以上は符数無関係
+    6: [],
+    7: [],
+    8: [],
+    9: [],
+    10: [],
+    11: [],
+    12: [],
+    13: [] // 役満
+};
+
+// 特殊役の符数固定ルール
+const specialYakuFuRules = {
+    "七対子": 25
+};
 
 // DOM要素
 const hanInput = document.getElementById('hanInput');
@@ -306,6 +329,10 @@ function initializeApp() {
     generateScoreTable();
     generateYakuList();
     generateYakuSelectionUI();
+    
+    // 初期状態の符数制限を設定
+    const initialHan = parseInt(hanInput.value);
+    adjustFuForHanChange(initialHan);
 }
 
 function setupEventListeners() {
@@ -345,15 +372,39 @@ function handleNumberInput(event) {
         } else if (action === 'decrease' && currentValue > 1) {
             newValue = currentValue - 1;
         }
+        
+        // 翻数変更時の符数調整
+        input.value = newValue;
+        adjustFuForHanChange(newValue);
+        
     } else if (target === 'fu' || target === 'fuYaku') {
+        // 符数変更時の制限チェック
+        const hanInputElement = target === 'fu' ? hanInput : document.getElementById('hanInput');
+        const currentHan = parseInt(hanInputElement.value);
+        const validFuList = validFuByHan[currentHan] || [];
+        
         if (action === 'increase' && currentValue < 110) {
-            newValue = currentValue + 10;
+            let testValue = currentValue + 10;
+            // 有効な符数まで進める
+            while (testValue <= 110 && validFuList.length > 0 && !validFuList.includes(testValue)) {
+                testValue += 10;
+            }
+            if (testValue <= 110 && (validFuList.length === 0 || validFuList.includes(testValue))) {
+                newValue = testValue;
+            }
         } else if (action === 'decrease' && currentValue > 20) {
-            newValue = currentValue - 10;
+            let testValue = currentValue - 10;
+            // 有効な符数まで戻す
+            while (testValue >= 20 && validFuList.length > 0 && !validFuList.includes(testValue)) {
+                testValue -= 10;
+            }
+            if (testValue >= 20 && (validFuList.length === 0 || validFuList.includes(testValue))) {
+                newValue = testValue;
+            }
         }
+        
+        input.value = newValue;
     }
-    
-    input.value = newValue;
 }
 
 function calculateScore() {
@@ -591,6 +642,8 @@ function handleInputModeChange(event) {
         fuYakuInput.value = fuInput.value;
         manualInputSection.style.display = 'none';
         yakuInputSection.style.display = 'block';
+        // 特殊役の処理を適用
+        updateFuInputForSpecialYaku();
     }
 }
 
@@ -607,6 +660,7 @@ function handleYakuSelection(event) {
     
     updateSelectedYakuDisplay();
     updateTotalHan();
+    updateFuInputForSpecialYaku();
 }
 
 // 選択された役の表示更新
@@ -628,6 +682,9 @@ function updateSelectedYakuDisplay() {
 function updateTotalHan() {
     const total = calculateTotalHanFromSelectedYaku();
     totalHan.textContent = total >= 13 ? '役満' : `${total}翻`;
+    
+    // 役選択モードでの符数制限適用
+    adjustFuForYakuSelection(total);
 }
 
 // 選択された役から合計翻数を計算
@@ -648,6 +705,135 @@ function calculateTotalHanFromSelectedYaku() {
     
     // 役満がある場合は役満として扱う
     return hasYakuman ? 13 : total;
+}
+
+// 特殊役の処理関数
+function hasSpecialYaku() {
+    return Array.from(selectedYaku).some(yakuName => 
+        specialYakuFuRules.hasOwnProperty(yakuName)
+    );
+}
+
+function getRequiredFuForSpecialYaku() {
+    for (const yakuName of selectedYaku) {
+        if (specialYakuFuRules.hasOwnProperty(yakuName)) {
+            return specialYakuFuRules[yakuName];
+        }
+    }
+    return null;
+}
+
+function updateFuInputForSpecialYaku() {
+    const inputMode = document.querySelector('input[name="inputMode"]:checked').value;
+    if (inputMode !== 'yaku') return;
+    
+    const requiredFu = getRequiredFuForSpecialYaku();
+    if (requiredFu) {
+        fuYakuInput.value = requiredFu;
+        // 符数入力を無効化
+        document.querySelectorAll('[data-target="fuYaku"]').forEach(btn => {
+            btn.disabled = true;
+            btn.classList.add('disabled');
+        });
+    } else {
+        // 符数入力を有効化
+        document.querySelectorAll('[data-target="fuYaku"]').forEach(btn => {
+            btn.disabled = false;
+            btn.classList.remove('disabled');
+        });
+    }
+}
+
+// 翻数に基づいて符数を検証・調整する関数
+function validateAndAdjustFu(han, currentFu) {
+    const validFuList = validFuByHan[han] || [];
+    
+    // 5翻以上は符数無関係
+    if (han >= 5) {
+        return null; // 符数無関係を示す
+    }
+    
+    // 現在の符数が有効な場合はそのまま
+    if (validFuList.includes(currentFu)) {
+        return currentFu;
+    }
+    
+    // 無効な場合は最も近い有効な符数に調整
+    if (validFuList.length > 0) {
+        // 現在の符数より大きい最小の有効符数を探す
+        const higherFu = validFuList.find(fu => fu >= currentFu);
+        if (higherFu) {
+            return higherFu;
+        }
+        
+        // 見つからない場合は最大の有効符数
+        return validFuList[validFuList.length - 1];
+    }
+    
+    return currentFu; // デフォルト
+}
+
+// 翻数変更時の符数調整
+function adjustFuForHanChange(newHan) {
+    const inputMode = document.querySelector('input[name="inputMode"]:checked').value;
+    
+    if (inputMode === 'manual') {
+        // 手動入力モードでの調整
+        const currentFu = parseInt(fuInput.value);
+        const adjustedFu = validateAndAdjustFu(newHan, currentFu);
+        
+        if (adjustedFu !== null) {
+            fuInput.value = adjustedFu;
+        }
+        
+        // 5翻以上の場合は符数入力を無効化
+        const fuButtons = document.querySelectorAll('[data-target="fu"]');
+        if (newHan >= 5) {
+            fuButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('disabled');
+            });
+        } else {
+            fuButtons.forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('disabled');
+            });
+        }
+    }
+}
+
+// 役選択モードでの符数調整
+function adjustFuForYakuSelection(totalHan) {
+    const inputMode = document.querySelector('input[name="inputMode"]:checked').value;
+    
+    if (inputMode === 'yaku') {
+        // 特殊役の処理が優先される場合はそちらに任せる
+        if (hasSpecialYaku()) {
+            return;
+        }
+        
+        // 役選択モードでの調整
+        const currentFu = parseInt(fuYakuInput.value);
+        const adjustedFu = validateAndAdjustFu(totalHan, currentFu);
+        
+        if (adjustedFu !== null) {
+            fuYakuInput.value = adjustedFu;
+        }
+        
+        // 5翻以上の場合は符数入力を無効化
+        const fuButtons = document.querySelectorAll('[data-target="fuYaku"]');
+        if (totalHan >= 5) {
+            fuButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('disabled');
+            });
+        } else {
+            fuButtons.forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('disabled');
+            });
+        }
+    }
 }
 
 // タッチイベントの最適化
