@@ -754,11 +754,15 @@ function updateFuInputForSpecialYaku() {
             btn.classList.add('disabled');
         });
     } else {
-        // 符数入力を有効化
-        document.querySelectorAll('[data-target="fuYaku"]').forEach(btn => {
-            btn.disabled = false;
-            btn.classList.remove('disabled');
-        });
+        // 特殊役がない場合でも、5翻以上なら符数入力は無効のまま
+        const totalHan = calculateTotalHanFromSelectedYaku();
+        if (totalHan < 5) {
+            // 5翻未満の場合のみ符数入力を有効化
+            document.querySelectorAll('[data-target="fuYaku"]').forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('disabled');
+            });
+        }
     }
 }
 
