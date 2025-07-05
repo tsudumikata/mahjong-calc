@@ -1,0 +1,603 @@
+/* 基本設定 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    color: #2c3e50;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+/* ヘッダー */
+.header {
+    text-align: center;
+    padding: 24px 0;
+    background: linear-gradient(135deg, #1a472a 0%, #2d5a37 100%);
+    color: white;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+}
+
+.subtitle {
+    font-size: 14px;
+    opacity: 0.9;
+    font-weight: 300;
+}
+
+/* メインコンテンツ */
+.main-content {
+    display: grid;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.calculator-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border: 1px solid #e8ecf0;
+}
+
+.input-section {
+    display: grid;
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.input-section h2 {
+    font-size: 18px;
+    color: #1a472a;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+/* ラジオボタン */
+.radio-group {
+    display: flex;
+    gap: 16px;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 12px 16px;
+    border: 2px solid #e8ecf0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    min-width: 80px;
+    justify-content: center;
+}
+
+.radio-label:hover {
+    border-color: #1a472a;
+    background: #f8fdf9;
+}
+
+.radio-label input[type="radio"] {
+    display: none;
+}
+
+.radio-label input[type="radio"]:checked + .radio-custom {
+    background: #1a472a;
+    border-color: #1a472a;
+}
+
+.radio-label input[type="radio"]:checked + .radio-custom::after {
+    opacity: 1;
+}
+
+.radio-custom {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ddd;
+    border-radius: 50%;
+    margin-right: 8px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.radio-custom::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.radio-label input[type="radio"]:checked ~ span:first-of-type {
+    color: #1a472a;
+    font-weight: 600;
+}
+
+.radio-label input[type="radio"]:checked {
+    border-color: #1a472a;
+    background: #f8fdf9;
+}
+
+/* 数値入力 */
+.number-input-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    max-width: 200px;
+}
+
+.number-btn {
+    width: 44px;
+    height: 44px;
+    border: 2px solid #1a472a;
+    background: white;
+    color: #1a472a;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.number-btn:hover {
+    background: #1a472a;
+    color: white;
+}
+
+.number-btn:active {
+    transform: scale(0.95);
+}
+
+.number-input-group input {
+    width: 80px;
+    height: 44px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    border: 2px solid #e8ecf0;
+    border-radius: 8px;
+    background: #f8fdf9;
+    color: #1a472a;
+}
+
+/* 計算ボタン */
+.calculate-section {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.calculate-btn {
+    width: 100%;
+    height: 56px;
+    background: linear-gradient(135deg, #1a472a 0%, #2d5a37 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(26, 71, 42, 0.3);
+}
+
+.calculate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(26, 71, 42, 0.4);
+}
+
+.calculate-btn:active {
+    transform: translateY(0);
+}
+
+/* 結果表示 */
+.result-section {
+    background: #f8fdf9;
+    border-radius: 12px;
+    padding: 24px;
+    border: 2px solid #1a472a;
+}
+
+.result-section h2 {
+    color: #1a472a;
+    margin-bottom: 16px;
+    font-size: 20px;
+    text-align: center;
+}
+
+.main-result {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a472a;
+    margin-bottom: 16px;
+    padding: 16px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.detail-result {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: none;
+}
+
+.toggle-detail-btn {
+    width: 100%;
+    height: 40px;
+    background: white;
+    color: #1a472a;
+    border: 2px solid #1a472a;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 16px;
+}
+
+.toggle-detail-btn:hover {
+    background: #1a472a;
+    color: white;
+}
+
+/* 参考資料セクション */
+.reference-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border: 1px solid #e8ecf0;
+}
+
+.tabs {
+    display: flex;
+    margin-bottom: 24px;
+    border-bottom: 2px solid #e8ecf0;
+}
+
+.tab-btn {
+    flex: 1;
+    height: 48px;
+    background: none;
+    border: none;
+    font-size: 16px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-btn.active,
+.tab-btn:hover {
+    color: #1a472a;
+    border-bottom-color: #1a472a;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.tab-content h3 {
+    color: #1a472a;
+    font-size: 20px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+/* 点数表 */
+.score-table-container {
+    overflow-x: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.score-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    font-size: 14px;
+}
+
+.score-table th {
+    background: #1a472a;
+    color: white;
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.score-table td {
+    padding: 10px 8px;
+    text-align: center;
+    border-bottom: 1px solid #e8ecf0;
+    white-space: nowrap;
+}
+
+.score-table tr:nth-child(even) {
+    background: #f8fdf9;
+}
+
+.score-table tr:hover {
+    background: #f0f8f0;
+}
+
+/* 役一覧 */
+.yaku-list-container {
+    display: grid;
+    gap: 12px;
+}
+
+.yaku-item {
+    background: #f8fdf9;
+    border: 1px solid #e8ecf0;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.3s ease;
+}
+
+.yaku-item:hover {
+    border-color: #1a472a;
+    box-shadow: 0 2px 10px rgba(26, 71, 42, 0.1);
+}
+
+.yaku-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a472a;
+    margin-bottom: 4px;
+}
+
+.yaku-han {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.yaku-description {
+    font-size: 13px;
+    color: #333;
+    line-height: 1.4;
+}
+
+/* 役選択UI */
+.yaku-input-section {
+    display: grid;
+    gap: 20px;
+}
+
+.yaku-categories {
+    display: grid;
+    gap: 16px;
+}
+
+.yaku-category {
+    background: #f8fdf9;
+    border: 1px solid #e8ecf0;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.yaku-category h3 {
+    font-size: 16px;
+    color: #1a472a;
+    margin-bottom: 12px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.yaku-checkboxes {
+    display: grid;
+    gap: 8px;
+}
+
+.yaku-checkbox {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 12px;
+    border: 1px solid #e8ecf0;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.yaku-checkbox:hover {
+    border-color: #1a472a;
+    background: #f8fdf9;
+}
+
+.yaku-checkbox input[type="checkbox"] {
+    display: none;
+}
+
+.yaku-checkbox input[type="checkbox"]:checked + .checkbox-custom {
+    background: #1a472a;
+    border-color: #1a472a;
+}
+
+.yaku-checkbox input[type="checkbox"]:checked + .checkbox-custom::after {
+    opacity: 1;
+}
+
+.checkbox-custom {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #ddd;
+    border-radius: 3px;
+    margin-right: 8px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.checkbox-custom::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.yaku-text {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+
+.yaku-checkbox input[type="checkbox"]:checked ~ .yaku-text {
+    color: #1a472a;
+    font-weight: 600;
+}
+
+/* 役選択サマリー */
+.yaku-summary {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 16px;
+}
+
+.selected-yaku-display,
+.total-han-display {
+    background: white;
+    border: 2px solid #1a472a;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.selected-yaku-display h3,
+.total-han-display h3 {
+    font-size: 16px;
+    color: #1a472a;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.selected-yaku-list {
+    font-size: 14px;
+    color: #333;
+    line-height: 1.4;
+    min-height: 20px;
+}
+
+.total-han {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a472a;
+    text-align: center;
+}
+
+/* 詳細結果の役表示 */
+.yaku-detail {
+    padding-left: 16px;
+    font-size: 14px;
+    color: #666;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 12px;
+    }
+    
+    .header h1 {
+        font-size: 24px;
+    }
+    
+    .calculator-section,
+    .reference-section {
+        padding: 16px;
+    }
+    
+    .radio-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .radio-label {
+        justify-content: flex-start;
+    }
+    
+    .number-input-group {
+        max-width: 100%;
+        justify-content: space-between;
+    }
+    
+    .yaku-summary {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .yaku-categories {
+        gap: 12px;
+    }
+    
+    .yaku-category {
+        padding: 12px;
+    }
+}
+
+@media (min-width: 769px) {
+    .main-content {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .calculator-section {
+        grid-column: 1;
+    }
+    
+    .reference-section {
+        grid-column: 2;
+    }
+    
+    .input-section {
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+    
+    .han-section,
+    .fu-section {
+        grid-column: span 1;
+    }
+    
+    .calculate-section {
+        grid-column: span 2;
+    }
+}

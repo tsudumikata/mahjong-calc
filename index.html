@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>麻雀点数計算機</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="description" content="リーチ麻雀の点数計算を簡単に行える計算機アプリです。">
+    <meta name="theme-color" content="#1a472a">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>麻雀点数計算機</h1>
+            <p class="subtitle">リーチ麻雀の点数を素早く計算</p>
+        </header>
+
+        <main class="main-content">
+            <div class="calculator-section">
+                <div class="input-section">
+                    <div class="input-mode-section">
+                        <h2>入力方式</h2>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="inputMode" value="manual" checked>
+                                <span class="radio-custom"></span>
+                                手動入力
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="inputMode" value="yaku">
+                                <span class="radio-custom"></span>
+                                役選択
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="win-type-section">
+                        <h2>和了方法</h2>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="winType" value="ron" checked>
+                                <span class="radio-custom"></span>
+                                ロン
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="winType" value="tsumo">
+                                <span class="radio-custom"></span>
+                                ツモ
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="player-type-section">
+                        <h2>親子</h2>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="playerType" value="parent" checked>
+                                <span class="radio-custom"></span>
+                                親
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="playerType" value="child">
+                                <span class="radio-custom"></span>
+                                子
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="manual-input-section">
+                        <div class="han-section">
+                            <h2>翻数</h2>
+                            <div class="number-input-group">
+                                <button class="number-btn" data-action="decrease" data-target="han">-</button>
+                                <input type="number" id="hanInput" value="1" min="1" max="13" readonly>
+                                <button class="number-btn" data-action="increase" data-target="han">+</button>
+                            </div>
+                        </div>
+
+                        <div class="fu-section">
+                            <h2>符数</h2>
+                            <div class="number-input-group">
+                                <button class="number-btn" data-action="decrease" data-target="fu">-</button>
+                                <input type="number" id="fuInput" value="30" min="20" max="110" step="10" readonly>
+                                <button class="number-btn" data-action="increase" data-target="fu">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="yaku-input-section" style="display: none;">
+                        <div class="yaku-selection">
+                            <h2>役選択</h2>
+                            <div class="yaku-categories">
+                                <div class="yaku-category">
+                                    <h3>1翻役</h3>
+                                    <div class="yaku-checkboxes" id="yaku1Han">
+                                    </div>
+                                </div>
+                                <div class="yaku-category">
+                                    <h3>2翻役</h3>
+                                    <div class="yaku-checkboxes" id="yaku2Han">
+                                    </div>
+                                </div>
+                                <div class="yaku-category">
+                                    <h3>3翻役</h3>
+                                    <div class="yaku-checkboxes" id="yaku3Han">
+                                    </div>
+                                </div>
+                                <div class="yaku-category">
+                                    <h3>6翻役</h3>
+                                    <div class="yaku-checkboxes" id="yaku6Han">
+                                    </div>
+                                </div>
+                                <div class="yaku-category">
+                                    <h3>役満</h3>
+                                    <div class="yaku-checkboxes" id="yakuYakuman">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="yaku-summary">
+                            <div class="selected-yaku-display">
+                                <h3>選択された役</h3>
+                                <div class="selected-yaku-list" id="selectedYakuList">
+                                    役を選択してください
+                                </div>
+                            </div>
+                            <div class="total-han-display">
+                                <h3>合計翻数</h3>
+                                <div class="total-han" id="totalHan">0翻</div>
+                            </div>
+                        </div>
+
+                        <div class="fu-section">
+                            <h2>符数</h2>
+                            <div class="number-input-group">
+                                <button class="number-btn" data-action="decrease" data-target="fuYaku">-</button>
+                                <input type="number" id="fuYakuInput" value="30" min="20" max="110" step="10" readonly>
+                                <button class="number-btn" data-action="increase" data-target="fuYaku">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="calculate-section">
+                    <button class="calculate-btn" id="calculateBtn">計算する</button>
+                </div>
+
+                <div class="result-section" id="resultSection" style="display: none;">
+                    <h2>計算結果</h2>
+                    <div class="result-display">
+                        <div class="main-result" id="mainResult"></div>
+                        <div class="detail-result" id="detailResult"></div>
+                    </div>
+                    <button class="toggle-detail-btn" id="toggleDetailBtn">詳細を表示</button>
+                </div>
+            </div>
+
+            <div class="reference-section">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="score-table">点数表</button>
+                    <button class="tab-btn" data-tab="yaku-list">役一覧</button>
+                </div>
+                
+                <div class="tab-content active" id="score-table">
+                    <h3>点数早見表</h3>
+                    <div class="score-table-container">
+                        <table class="score-table">
+                            <thead>
+                                <tr>
+                                    <th>翻数</th>
+                                    <th>符数</th>
+                                    <th>子・ロン</th>
+                                    <th>子・ツモ</th>
+                                    <th>親・ロン</th>
+                                    <th>親・ツモ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scoreTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="yaku-list">
+                    <h3>役一覧</h3>
+                    <div class="yaku-list-container" id="yakuListContainer">
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
