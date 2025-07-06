@@ -586,6 +586,8 @@ body {
     .score-table {
         table-layout: fixed;
         font-size: 12px;
+        width: 94%;
+        margin: 0 auto;
     }
     
     .score-table th,
