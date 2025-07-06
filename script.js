@@ -257,12 +257,14 @@ const scoreTable = [
     { han: 2, fu: 110, childRon: 7100, childTsumo: "1800/3600", parentRon: 10600, parentTsumo: "3600" },
     
     { han: 3, fu: 20, childRon: 2600, childTsumo: "700/1300", parentRon: 3900, parentTsumo: "1300" },
+    { han: 3, fu: 25, childRon: 3200, childTsumo: "800/1600", parentRon: 4800, parentTsumo: "1600" },
     { han: 3, fu: 30, childRon: 3900, childTsumo: "1000/2000", parentRon: 5800, parentTsumo: "2000" },
     { han: 3, fu: 40, childRon: 5200, childTsumo: "1300/2600", parentRon: 7700, parentTsumo: "2600" },
     { han: 3, fu: 50, childRon: 6400, childTsumo: "1600/3200", parentRon: 9600, parentTsumo: "3200" },
     { han: 3, fu: 60, childRon: 7700, childTsumo: "2000/3900", parentRon: 11600, parentTsumo: "3900" },
     
     { han: 4, fu: 20, childRon: 5200, childTsumo: "1300/2600", parentRon: 7700, parentTsumo: "2600" },
+    { han: 4, fu: 25, childRon: 6400, childTsumo: "1600/3200", parentRon: 9600, parentTsumo: "3200" },
     { han: 4, fu: 30, childRon: 7700, childTsumo: "2000/3900", parentRon: 11600, parentTsumo: "3900" },
     
     { han: 5, fu: 0, childRon: 8000, childTsumo: "2000/4000", parentRon: 12000, parentTsumo: "4000" },
@@ -280,8 +282,8 @@ const scoreTable = [
 const validFuByHan = {
     1: [30, 40, 50, 60, 70, 80, 90, 100, 110],
     2: [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110],
-    3: [20, 30, 40, 50, 60],
-    4: [20, 30],
+    3: [20, 25, 30, 40, 50, 60],
+    4: [20, 25, 30],
     5: [], // 満貫以上は符数無関係
     6: [],
     7: [],
