@@ -581,6 +581,29 @@ body {
     .yaku-category {
         padding: 12px;
     }
+    
+    /* 点数表のスマートフォン最適化 */
+    .score-table {
+        table-layout: fixed;
+        font-size: 12px;
+        width: 94%;
+        margin: 0 auto;
+    }
+    
+    .score-table th,
+    .score-table td {
+        padding: 6px 3px;
+        word-break: break-all;
+        line-height: 1.2;
+    }
+    
+    /* 各列の幅制御 */
+    .score-table th:nth-child(1), .score-table td:nth-child(1) { width: 12%; } /* 翻数 */
+    .score-table th:nth-child(2), .score-table td:nth-child(2) { width: 13%; } /* 符数 */
+    .score-table th:nth-child(3), .score-table td:nth-child(3) { width: 18%; } /* 子ロン */
+    .score-table th:nth-child(4), .score-table td:nth-child(4) { width: 23%; } /* 子ツモ */
+    .score-table th:nth-child(5), .score-table td:nth-child(5) { width: 18%; } /* 親ロン */
+    .score-table th:nth-child(6), .score-table td:nth-child(6) { width: 16%; } /* 親ツモ */
 }
 
 @media (min-width: 769px) {
