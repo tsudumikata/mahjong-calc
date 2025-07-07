@@ -362,6 +362,11 @@ function setupEventListeners() {
     document.querySelectorAll('input[name="inputMode"]').forEach(radio => {
         radio.addEventListener('change', handleInputModeChange);
     });
+    
+    // 勝ち方（ロン/ツモ）切り替え - 平和の符数更新のため
+    document.querySelectorAll('input[name="winType"]').forEach(radio => {
+        radio.addEventListener('change', handleWinTypeChange);
+    });
 }
 
 function handleNumberInput(event) {
@@ -667,6 +672,19 @@ function handleInputModeChange(event) {
     }
 }
 
+// 勝ち方（ロン/ツモ）切り替え処理
+function handleWinTypeChange(event) {
+    const inputMode = document.querySelector('input[name="inputMode"]:checked');
+    
+    // 役選択モードでのみ処理
+    if (inputMode && inputMode.value === 'yaku') {
+        // 平和が選択されている場合、符数を更新
+        if (hasPinfu()) {
+            updateFuInputForSpecialYaku();
+        }
+    }
+}
+
 // 役選択処理
 function handleYakuSelection(event) {
     const yakuName = event.target.value;
@@ -743,10 +761,20 @@ function getRequiredFuForSpecialYaku() {
     return null;
 }
 
+// 平和の処理関数
+function hasPinfu() {
+    return selectedYaku.has('平和');
+}
+
+function getPinfuFu(winType) {
+    return winType === 'ron' ? 30 : 20;
+}
+
 function updateFuInputForSpecialYaku() {
     const inputMode = document.querySelector('input[name="inputMode"]:checked').value;
     if (inputMode !== 'yaku') return;
     
+    // 1. 固定符数の特殊役（七対子など）を最優先で処理
     const requiredFu = getRequiredFuForSpecialYaku();
     if (requiredFu) {
         fuYakuInput.value = requiredFu;
@@ -755,16 +783,40 @@ function updateFuInputForSpecialYaku() {
             btn.disabled = true;
             btn.classList.add('disabled');
         });
-    } else {
-        // 特殊役がない場合でも、5翻以上なら符数入力は無効のまま
-        const totalHan = calculateTotalHanFromSelectedYaku();
-        if (totalHan < 5) {
-            // 5翻未満の場合のみ符数入力を有効化
+        return;
+    }
+    
+    // 2. 平和の処理（動的符数）
+    if (hasPinfu()) {
+        const winTypeElement = document.querySelector('input[name="winType"]:checked');
+        if (winTypeElement) {
+            const winType = winTypeElement.value;
+            const pinfuFu = getPinfuFu(winType);
+            fuYakuInput.value = pinfuFu;
+            // 符数入力を無効化
             document.querySelectorAll('[data-target="fuYaku"]').forEach(btn => {
-                btn.disabled = false;
-                btn.classList.remove('disabled');
+                btn.disabled = true;
+                btn.classList.add('disabled');
+            });
+        } else {
+            // winTypeが選択されていない場合はデフォルトで20符（ツモ）
+            fuYakuInput.value = 20;
+            document.querySelectorAll('[data-target="fuYaku"]').forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('disabled');
             });
         }
+        return;
+    }
+    
+    // 3. 特殊役がない場合の一般処理
+    const totalHan = calculateTotalHanFromSelectedYaku();
+    if (totalHan < 5) {
+        // 5翻未満の場合のみ符数入力を有効化
+        document.querySelectorAll('[data-target="fuYaku"]').forEach(btn => {
+            btn.disabled = false;
+            btn.classList.remove('disabled');
+        });
     }
 }
 
