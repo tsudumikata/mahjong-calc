@@ -57,3 +57,22 @@ build/
 # Project documentation and development files
 doc/
 CLAUDE.md
+
+# Playwright テスト関連
+test-results/
+playwright-report/
+*-report/
+coverage/
+
+# パッケージマネージャーのロックファイル競合
+package-lock.json.backup
+yarn.lock.backup
+
+# IDE and テストツール一時ファイル
+.nyc_output
+.coverage/
+*.lcov
+*.tgz
+
+# Playwright ブラウザダウンロード（デフォルトでは~/.cache/に保存されるが、プロジェクト内に設定する場合）
+browsers/

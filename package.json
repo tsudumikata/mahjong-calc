@@ -1,0 +1,34 @@
+{
+  "name": "mahjong_calc",
+  "version": "1.0.0",
+  "main": "script.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:mobile": "playwright test --project=mobile-chrome --project=mobile-safari",
+    "test:desktop": "playwright test --project=chromium --project=firefox --project=webkit",
+    "test:report": "playwright show-report",
+    "serve": "serve . -p 3000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tsudumikata/mahjong-calc.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tsudumikata/mahjong-calc/issues"
+  },
+  "homepage": "https://github.com/tsudumikata/mahjong-calc#readme",
+  "description": "",
+  "devDependencies": {
+    "@playwright/test": "^1.53.2",
+    "serve": "^14.2.4"
+  }
+}
