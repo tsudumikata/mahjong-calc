@@ -568,7 +568,8 @@ function displayResult(result, han, fu, winType, playerType, inputMode = 'manual
 }
 
 function toggleDetailDisplay() {
-    const isVisible = detailResult.style.display !== 'none';
+    const computedStyle = window.getComputedStyle(detailResult);
+    const isVisible = computedStyle.display !== 'none';
     detailResult.style.display = isVisible ? 'none' : 'block';
     toggleDetailBtn.textContent = isVisible ? '詳細を表示' : '詳細を隠す';
 }
