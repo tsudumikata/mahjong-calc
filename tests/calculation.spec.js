@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { setHanValue, setFuValue } from './test-utils.js';
+import { setHanValue, setFuValue, setFuValueForYakuMode } from './test-utils.js';
 
 test.describe('麻雀点数計算機 計算機能テスト', () => {
   test.beforeEach(async ({ page }) => {
@@ -37,8 +37,7 @@ test.describe('麻雀点数計算機 計算機能テスト', () => {
     await page.locator('#calculateBtn').click();
     
     await expect(page.locator('#resultSection')).toBeVisible();
-    await expect(page.locator('#mainResult')).toContainText('300点');
-    await expect(page.locator('#mainResult')).toContainText('500点');
+    await expect(page.locator('#mainResult')).toContainText('300/500');
   });
 
   test('手動入力モード: 親のロン計算', async ({ page }) => {
@@ -72,7 +71,7 @@ test.describe('麻雀点数計算機 計算機能テスト', () => {
     await page.locator('#calculateBtn').click();
     
     await expect(page.locator('#resultSection')).toBeVisible();
-    await expect(page.locator('#mainResult')).toContainText('500点');
+    await expect(page.locator('#mainResult')).toContainText('500');
   });
 
   test('手動入力モード: 満貫計算', async ({ page }) => {
@@ -168,20 +167,21 @@ test.describe('麻雀点数計算機 計算機能テスト', () => {
     await page.locator('label:has(input[name="winType"][value="ron"])').click();
     await page.locator('label:has(input[name="playerType"][value="child"])').click();
     
-    // 1翻20符の計算
+    // 1翻110符の計算（翻数を先に設定）
     await setHanValue(page, 1);
-    await setFuValue(page, 20);
-    await page.locator('#calculateBtn').click();
-    
-    await expect(page.locator('#resultSection')).toBeVisible();
-    // 1翻20符は特殊な計算になる
-    
-    // 1翻110符の計算
     await setFuValue(page, 110);
     await page.locator('#calculateBtn').click();
     
     await expect(page.locator('#resultSection')).toBeVisible();
     await expect(page.locator('#mainResult')).toContainText('3,600点');
+    
+    // 翻数を2翻に変更してから20符をテスト（2翻では20符が有効）
+    await setHanValue(page, 2);
+    await setFuValue(page, 20);
+    await page.locator('#calculateBtn').click();
+    
+    await expect(page.locator('#resultSection')).toBeVisible();
+    await expect(page.locator('#mainResult')).toContainText('1,300点');
   });
 
   test('詳細表示の切り替え', async ({ page }) => {
@@ -220,14 +220,16 @@ test.describe('麻雀点数計算機 計算機能テスト', () => {
     await page.locator('label:has(input[name="winType"][value="ron"])').click();
     await page.locator('label:has(input[name="playerType"][value="child"])').click();
     
-    // 符数を設定
-    await setFuValue(page, 30);
+    // 符数を設定（役選択モード用）
+    await setFuValueForYakuMode(page, 30);
     
-    // 役を選択（リーチ）
-    const reachCheckbox = page.locator('input[value="リーチ"]');
-    if (await reachCheckbox.isVisible()) {
-      await reachCheckbox.click();
-    }
+    // 役を選択（立直） - ラベル要素をクリック
+    const reachLabel = page.locator('label.yaku-checkbox:has(input[value="立直"])');
+    await expect(reachLabel).toBeVisible();
+    await reachLabel.click();
+    
+    // 役が選択されたことを確認
+    await expect(page.locator('#totalHan')).toContainText('1翻');
     
     // 計算を実行
     await page.locator('#calculateBtn').click();
@@ -240,20 +242,20 @@ test.describe('麻雀点数計算機 計算機能テスト', () => {
     // 手動入力モードを選択
     await page.locator('label:has(input[name="inputMode"][value="manual"])').click();
     
-    // 翻数の最小値テスト
+    // 翻数を1翻に設定（符数変更が可能な状態にする）
     await setHanValue(page, 1);
     await expect(page.locator('#hanInput')).toHaveValue('1');
     
-    // 翻数の最大値テスト
-    await setHanValue(page, 13);
-    await expect(page.locator('#hanInput')).toHaveValue('13');
-    
-    // 符数の最小値テスト
-    await setFuValue(page, 20);
-    await expect(page.locator('#fuInput')).toHaveValue('20');
-    
-    // 符数の最大値テスト
+    // 符数の最大値テスト（1翻で110符）
     await setFuValue(page, 110);
     await expect(page.locator('#fuInput')).toHaveValue('110');
+    
+    // 符数を30符に戻す
+    await setFuValue(page, 30);
+    await expect(page.locator('#fuInput')).toHaveValue('30');
+    
+    // 翻数の最大値テスト（符数設定後に翻数を変更）
+    await setHanValue(page, 13);
+    await expect(page.locator('#hanInput')).toHaveValue('13');
   });
 });
