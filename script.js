@@ -41,6 +41,9 @@ function initializeApp() {
     // StateManager初期化
     stateManager = createStateManager();
     
+    // HTMLフォームの実際の初期状態をStateManagerに同期
+    syncInitialFormStateToStateManager();
+    
     // DOM要素オブジェクト作成
     const domElements = {
         hanInput,
@@ -77,6 +80,35 @@ function initializeApp() {
     console.log('StateManager初期化完了:', stateManager.getState());
 }
 
+// HTMLフォームの初期状態をStateManagerに同期
+function syncInitialFormStateToStateManager() {
+    // 入力モードの同期
+    const inputModeElement = document.querySelector('input[name="inputMode"]:checked');
+    if (inputModeElement) {
+        stateManager.setInputMode(inputModeElement.value);
+    }
+    
+    // 和了タイプの同期
+    const winTypeElement = document.querySelector('input[name="winType"]:checked');
+    if (winTypeElement) {
+        stateManager.setWinType(winTypeElement.value);
+    }
+    
+    // 親子の同期
+    const playerTypeElement = document.querySelector('input[name="playerType"]:checked');
+    if (playerTypeElement) {
+        stateManager.setPlayerType(playerTypeElement.value);
+    }
+    
+    // 符数の同期（初期値）
+    const initialFu = parseInt(fuInput.value) || 20;
+    stateManager.setFu(initialFu);
+    
+    // 翻数の同期（初期値）
+    const initialHan = parseInt(hanInput.value) || 1;
+    stateManager.setHan(initialHan);
+}
+
 function setupEventListeners() {
     // 数値入力ボタン
     document.querySelectorAll('.number-btn').forEach(btn => {
@@ -102,6 +134,11 @@ function setupEventListeners() {
     // 勝ち方（ロン/ツモ）切り替え - 平和の符数更新のため
     document.querySelectorAll('input[name="winType"]').forEach(radio => {
         radio.addEventListener('change', handleWinTypeChange);
+    });
+    
+    // 親子切り替え
+    document.querySelectorAll('input[name="playerType"]').forEach(radio => {
+        radio.addEventListener('change', handlePlayerTypeChange);
     });
 }
 
@@ -167,15 +204,15 @@ function handleNumberInput(event) {
 }
 
 function calculateScore() {
-    const inputMode = document.querySelector('input[name="inputMode"]:checked').value;
+    // StateManager経由で全状態を取得
+    const currentState = stateManager.getState();
     let han, fu;
     
-    if (inputMode === 'manual') {
+    if (currentState.inputMode === 'manual') {
         han = parseInt(hanInput.value);
         fu = parseInt(fuInput.value);
     } else {
-        // 役選択モードの場合、選択された役から翻数を計算（StateManager経由）
-        const currentState = stateManager.getState();
+        // 役選択モードの場合、選択された役から翻数を計算
         han = calculateTotalHan(currentState.selectedYaku, yakuData);
         fu = parseInt(fuYakuInput.value);
         
@@ -185,15 +222,14 @@ function calculateScore() {
         }
     }
     
-    const winType = document.querySelector('input[name="winType"]:checked').value;
-    const playerType = document.querySelector('input[name="playerType"]:checked').value;
+    const winType = currentState.winType;
+    const playerType = currentState.playerType;
     
     // 純粋関数を使用した計算
     const result = calculateScoreResult(han, fu, winType, playerType);
     
     if (result) {
-        const currentState = stateManager.getState();
-        displayResult(result, han, fu, winType, playerType, inputMode, currentState.selectedYaku, yakuData, mainResult, detailResult);
+        displayResult(result, han, fu, winType, playerType, currentState.inputMode, currentState.selectedYaku, yakuData, mainResult, detailResult);
         resultSection.style.display = 'block';
         resultSection.scrollIntoView({ behavior: 'smooth' });
     } else {
@@ -268,6 +304,14 @@ function handleWinTypeChange(event) {
     // StateManager経由で和了タイプを設定
     // 平和処理等のUI更新は stateSubscriptions.js の購読者が自動実行
     stateManager.setWinType(winType);
+}
+
+// 親子切り替え処理（リアクティブ購読システム対応）
+function handlePlayerTypeChange(event) {
+    const playerType = event.target.value;
+    
+    // StateManager経由で親子タイプを設定
+    stateManager.setPlayerType(playerType);
 }
 
 // 役選択処理

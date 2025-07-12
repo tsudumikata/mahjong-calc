@@ -87,7 +87,7 @@ export class StateManager {
 
     // 和了情報設定
     setWinType(winType) {
-        if (winType === 'tsumo' || winType === 'ron') {
+        if (winType === 'ron' || winType === 'tsumo') {
             this.updateState({ winType });
         } else {
             console.warn(`StateManager: Invalid win type "${winType}"`);
@@ -95,7 +95,7 @@ export class StateManager {
     }
 
     setPlayerType(playerType) {
-        if (playerType === 'oya' || playerType === 'ko') {
+        if (playerType === 'parent' || playerType === 'child') {
             this.updateState({ playerType });
         } else {
             console.warn(`StateManager: Invalid player type "${playerType}"`);
@@ -104,10 +104,10 @@ export class StateManager {
 
     setWinInfo(winType, playerType) {
         const updates = {};
-        if (winType === 'tsumo' || winType === 'ron') {
+        if (winType === 'ron' || winType === 'tsumo') {
             updates.winType = winType;
         }
-        if (playerType === 'oya' || playerType === 'ko') {
+        if (playerType === 'parent' || playerType === 'child') {
             updates.playerType = playerType;
         }
         this.updateState(updates);
@@ -189,8 +189,8 @@ export function createDefaultState() {
         inputMode: 'manual', // 'manual' | 'yaku'
         
         // 和了情報
-        winType: 'tsumo',   // 'tsumo' | 'ron'
-        playerType: 'ko',   // 'oya' | 'ko'
+        winType: 'ron',     // 'ron' | 'tsumo' (HTMLの初期値に合わせて修正)
+        playerType: 'parent', // 'parent' | 'child' (HTMLの初期値に合わせて修正)
         
         // 符数・翻数
         currentFu: 20,
