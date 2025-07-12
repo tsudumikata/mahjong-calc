@@ -1,0 +1,45 @@
+// 麻雀点数計算テーブル
+export const scoreTable = [
+    { han: 1, fu: 30, childRon: 1000, childTsumo: "300/500", parentRon: 1500, parentTsumo: "500" },
+    { han: 1, fu: 40, childRon: 1300, childTsumo: "400/700", parentRon: 2000, parentTsumo: "700" },
+    { han: 1, fu: 50, childRon: 1600, childTsumo: "400/800", parentRon: 2400, parentTsumo: "800" },
+    { han: 1, fu: 60, childRon: 2000, childTsumo: "500/1000", parentRon: 2900, parentTsumo: "1000" },
+    { han: 1, fu: 70, childRon: 2300, childTsumo: "600/1200", parentRon: 3400, parentTsumo: "1200" },
+    { han: 1, fu: 80, childRon: 2600, childTsumo: "700/1300", parentRon: 3900, parentTsumo: "1300" },
+    { han: 1, fu: 90, childRon: 2900, childTsumo: "800/1500", parentRon: 4400, parentTsumo: "1500" },
+    { han: 1, fu: 100, childRon: 3200, childTsumo: "800/1600", parentRon: 4800, parentTsumo: "1600" },
+    { han: 1, fu: 110, childRon: 3600, childTsumo: "900/1800", parentRon: 5300, parentTsumo: "1800" },
+    
+    { han: 2, fu: 20, childRon: 1300, childTsumo: "400/700", parentRon: 2000, parentTsumo: "700" },
+    { han: 2, fu: 25, childRon: 1600, childTsumo: "400/800", parentRon: 2400, parentTsumo: "800" },
+    { han: 2, fu: 30, childRon: 2000, childTsumo: "500/1000", parentRon: 2900, parentTsumo: "1000" },
+    { han: 2, fu: 40, childRon: 2600, childTsumo: "700/1300", parentRon: 3900, parentTsumo: "1300" },
+    { han: 2, fu: 50, childRon: 3200, childTsumo: "800/1600", parentRon: 4800, parentTsumo: "1600" },
+    { han: 2, fu: 60, childRon: 3900, childTsumo: "1000/2000", parentRon: 5800, parentTsumo: "2000" },
+    { han: 2, fu: 70, childRon: 4500, childTsumo: "1200/2300", parentRon: 6800, parentTsumo: "2300" },
+    { han: 2, fu: 80, childRon: 5200, childTsumo: "1300/2600", parentRon: 7700, parentTsumo: "2600" },
+    { han: 2, fu: 90, childRon: 5800, childTsumo: "1500/2900", parentRon: 8700, parentTsumo: "2900" },
+    { han: 2, fu: 100, childRon: 6400, childTsumo: "1600/3200", parentRon: 9600, parentTsumo: "3200" },
+    { han: 2, fu: 110, childRon: 7100, childTsumo: "1800/3600", parentRon: 10600, parentTsumo: "3600" },
+    
+    { han: 3, fu: 20, childRon: 2600, childTsumo: "700/1300", parentRon: 3900, parentTsumo: "1300" },
+    { han: 3, fu: 25, childRon: 3200, childTsumo: "800/1600", parentRon: 4800, parentTsumo: "1600" },
+    { han: 3, fu: 30, childRon: 3900, childTsumo: "1000/2000", parentRon: 5800, parentTsumo: "2000" },
+    { han: 3, fu: 40, childRon: 5200, childTsumo: "1300/2600", parentRon: 7700, parentTsumo: "2600" },
+    { han: 3, fu: 50, childRon: 6400, childTsumo: "1600/3200", parentRon: 9600, parentTsumo: "3200" },
+    { han: 3, fu: 60, childRon: 7700, childTsumo: "2000/3900", parentRon: 11600, parentTsumo: "3900" },
+    
+    { han: 4, fu: 20, childRon: 5200, childTsumo: "1300/2600", parentRon: 7700, parentTsumo: "2600" },
+    { han: 4, fu: 25, childRon: 6400, childTsumo: "1600/3200", parentRon: 9600, parentTsumo: "3200" },
+    { han: 4, fu: 30, childRon: 7700, childTsumo: "2000/3900", parentRon: 11600, parentTsumo: "3900" },
+    
+    { han: 5, fu: 0, childRon: 8000, childTsumo: "2000/4000", parentRon: 12000, parentTsumo: "4000" },
+    { han: 6, fu: 0, childRon: 12000, childTsumo: "3000/6000", parentRon: 18000, parentTsumo: "6000" },
+    { han: 7, fu: 0, childRon: 12000, childTsumo: "3000/6000", parentRon: 18000, parentTsumo: "6000" },
+    { han: 8, fu: 0, childRon: 16000, childTsumo: "4000/8000", parentRon: 24000, parentTsumo: "8000" },
+    { han: 9, fu: 0, childRon: 16000, childTsumo: "4000/8000", parentRon: 24000, parentTsumo: "8000" },
+    { han: 10, fu: 0, childRon: 16000, childTsumo: "4000/8000", parentRon: 24000, parentTsumo: "8000" },
+    { han: 11, fu: 0, childRon: 24000, childTsumo: "6000/12000", parentRon: 36000, parentTsumo: "12000" },
+    { han: 12, fu: 0, childRon: 24000, childTsumo: "6000/12000", parentRon: 36000, parentTsumo: "12000" },
+    { han: 13, fu: 0, childRon: 32000, childTsumo: "8000/16000", parentRon: 48000, parentTsumo: "16000" }
+];
