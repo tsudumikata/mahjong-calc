@@ -4,6 +4,8 @@
 import { yakuData } from './js/data/yakuData.js';
 import { scoreTable } from './js/data/scoreTable.js';
 import { validFuByHan, specialYakuFuRules, DEFAULT_SETTINGS } from './js/data/constants.js';
+import { calculateScoreResult } from './js/modules/calculator.js';
+import { calculateTotalHan, hasSpecialYaku, hasPinfu, getRequiredFuForSpecialYaku, validateAndAdjustFu, getPinfuFu } from './js/modules/validator.js';
 
 // DOM要素
 const hanInput = document.getElementById('hanInput');
@@ -42,7 +44,7 @@ function initializeApp() {
     adjustFuForHanChange(initialHan);
     
     // 役選択モードの初期制限も設定
-    const totalHan = calculateTotalHanFromSelectedYaku();
+    const totalHan = calculateTotalHan(selectedYaku, yakuData);
     adjustFuForYakuSelection(totalHan);
 }
 
@@ -106,7 +108,7 @@ function handleNumberInput(event) {
             currentHan = parseInt(hanInput.value);
         } else {
             // 役選択モードの場合
-            currentHan = calculateTotalHanFromSelectedYaku();
+            currentHan = calculateTotalHan(selectedYaku, yakuData);
         }
         const validFuList = validFuByHan[currentHan] || [];
         
@@ -143,7 +145,7 @@ function calculateScore() {
         fu = parseInt(fuInput.value);
     } else {
         // 役選択モードの場合、選択された役から翻数を計算
-        han = calculateTotalHanFromSelectedYaku();
+        han = calculateTotalHan(selectedYaku, yakuData);
         fu = parseInt(fuYakuInput.value);
         
         if (han === 0) {
@@ -155,7 +157,8 @@ function calculateScore() {
     const winType = document.querySelector('input[name="winType"]:checked').value;
     const playerType = document.querySelector('input[name="playerType"]:checked').value;
     
-    const result = getScoreFromTable(han, fu, winType, playerType);
+    // 純粋関数を使用した計算
+    const result = calculateScoreResult(han, fu, winType, playerType);
     
     if (result) {
         displayResult(result, han, fu, winType, playerType, inputMode);
@@ -166,51 +169,7 @@ function calculateScore() {
     }
 }
 
-function getScoreFromTable(han, fu, winType, playerType) {
-    // 役満の場合
-    if (han >= 13) {
-        return {
-            score: playerType === 'parent' ? 48000 : 32000,
-            tsumoScore: playerType === 'parent' ? "16000" : "8000/16000",
-            name: "役満"
-        };
-    }
-    
-    // 跳満以上の場合
-    if (han >= 5) {
-        const entry = scoreTable.find(entry => entry.han === han);
-        if (entry) {
-            return {
-                score: winType === 'ron' ? 
-                    (playerType === 'parent' ? entry.parentRon : entry.childRon) :
-                    (playerType === 'parent' ? entry.parentTsumo : entry.childTsumo),
-                name: getScoreName(han)
-            };
-        }
-    }
-    
-    // 通常の場合
-    const entry = scoreTable.find(entry => entry.han === han && entry.fu === fu);
-    if (entry) {
-        return {
-            score: winType === 'ron' ? 
-                (playerType === 'parent' ? entry.parentRon : entry.childRon) :
-                (playerType === 'parent' ? entry.parentTsumo : entry.childTsumo),
-            name: getScoreName(han, fu)
-        };
-    }
-    
-    return null;
-}
 
-function getScoreName(han, fu) {
-    if (han >= 13) return "役満";
-    if (han >= 11) return "三倍満";
-    if (han >= 8) return "倍満";
-    if (han >= 6) return "跳満";
-    if (han === 5) return "満貫";
-    return `${han}翻${fu}符`;
-}
 
 function displayResult(result, han, fu, winType, playerType, inputMode = 'manual') {
     const winTypeText = winType === 'ron' ? 'ロン' : 'ツモ';
@@ -373,7 +332,7 @@ function handleInputModeChange(event) {
         // 特殊役の処理を適用
         updateFuInputForSpecialYaku();
         // 一般的な翻数・符数制限を適用
-        const totalHan = calculateTotalHanFromSelectedYaku();
+        const totalHan = calculateTotalHan(selectedYaku, yakuData);
         adjustFuForYakuSelection(totalHan);
     }
 }
@@ -424,7 +383,7 @@ function updateSelectedYakuDisplay() {
 
 // 合計翻数の計算と表示更新
 function updateTotalHan() {
-    const total = calculateTotalHanFromSelectedYaku();
+    const total = calculateTotalHan(selectedYaku, yakuData);
     totalHan.textContent = total >= 13 ? '役満' : `${total}翻`;
     
     // 役選択モードでの符数制限適用
@@ -432,49 +391,12 @@ function updateTotalHan() {
 }
 
 // 選択された役から合計翻数を計算
-function calculateTotalHanFromSelectedYaku() {
-    let total = 0;
-    let hasYakuman = false;
-    
-    selectedYaku.forEach(yakuName => {
-        const yaku = yakuData.find(y => y.name === yakuName);
-        if (yaku) {
-            if (yaku.han >= 13) {
-                hasYakuman = true;
-            } else {
-                total += yaku.han;
-            }
-        }
-    });
-    
-    // 役満がある場合は役満として扱う
-    return hasYakuman ? 13 : total;
-}
 
 // 特殊役の処理関数
-function hasSpecialYaku() {
-    return Array.from(selectedYaku).some(yakuName => 
-        specialYakuFuRules.hasOwnProperty(yakuName)
-    );
-}
 
-function getRequiredFuForSpecialYaku() {
-    for (const yakuName of selectedYaku) {
-        if (specialYakuFuRules.hasOwnProperty(yakuName)) {
-            return specialYakuFuRules[yakuName];
-        }
-    }
-    return null;
-}
 
 // 平和の処理関数
-function hasPinfu() {
-    return selectedYaku.has('平和');
-}
 
-function getPinfuFu(winType) {
-    return winType === 'ron' ? 30 : 20;
-}
 
 function updateFuInputForSpecialYaku() {
     const inputMode = document.querySelector('input[name="inputMode"]:checked').value;
@@ -516,7 +438,7 @@ function updateFuInputForSpecialYaku() {
     }
     
     // 3. 特殊役がない場合の一般処理
-    const totalHan = calculateTotalHanFromSelectedYaku();
+    const totalHan = calculateTotalHan(selectedYaku, yakuData);
     if (totalHan < 5) {
         // 5翻未満の場合のみ符数入力を有効化
         document.querySelectorAll('[data-target="fuYaku"]').forEach(btn => {
@@ -527,33 +449,6 @@ function updateFuInputForSpecialYaku() {
 }
 
 // 翻数に基づいて符数を検証・調整する関数
-function validateAndAdjustFu(han, currentFu) {
-    const validFuList = validFuByHan[han] || [];
-    
-    // 5翻以上は符数無関係
-    if (han >= 5) {
-        return null; // 符数無関係を示す
-    }
-    
-    // 現在の符数が有効な場合はそのまま
-    if (validFuList.includes(currentFu)) {
-        return currentFu;
-    }
-    
-    // 無効な場合は最も近い有効な符数に調整
-    if (validFuList.length > 0) {
-        // 現在の符数より大きい最小の有効符数を探す
-        const higherFu = validFuList.find(fu => fu >= currentFu);
-        if (higherFu) {
-            return higherFu;
-        }
-        
-        // 見つからない場合は最大の有効符数
-        return validFuList[validFuList.length - 1];
-    }
-    
-    return currentFu; // デフォルト
-}
 
 // 翻数変更時の符数調整
 function adjustFuForHanChange(newHan) {
@@ -590,7 +485,7 @@ function adjustFuForYakuSelection(totalHan) {
     
     if (inputMode === 'yaku') {
         // 特殊役の処理が優先される場合はそちらに任せる
-        if (hasSpecialYaku()) {
+        if (hasSpecialYaku(selectedYaku, specialYakuFuRules)) {
             return;
         }
         
