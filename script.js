@@ -7,6 +7,8 @@ import { validFuByHan, specialYakuFuRules, DEFAULT_SETTINGS } from './js/data/co
 import { calculateScoreResult } from './js/modules/calculator.js';
 import { calculateTotalHan, hasSpecialYaku, hasPinfu, getRequiredFuForSpecialYaku, validateAndAdjustFu, getPinfuFu } from './js/modules/validator.js';
 import { generateScoreTable, generateYakuList, displayResult, updateSelectedYakuDisplay, toggleDetailDisplay } from './js/modules/display.js';
+import { createStateManager } from './js/modules/stateManager.js';
+import { setupStateSubscriptions } from './js/modules/stateSubscriptions.js';
 
 // DOM要素
 const hanInput = document.getElementById('hanInput');
@@ -26,8 +28,9 @@ const yakuInputSection = document.querySelector('.yaku-input-section');
 const selectedYakuList = document.getElementById('selectedYakuList');
 const totalHan = document.getElementById('totalHan');
 
-// 選択された役を追跡
-let selectedYaku = new Set();
+// 状態管理
+let stateManager;
+let stateSubscriptions;
 
 // 初期化
 document.addEventListener('DOMContentLoaded', function() {
@@ -35,6 +38,27 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
+    // StateManager初期化
+    stateManager = createStateManager();
+    
+    // DOM要素オブジェクト作成
+    const domElements = {
+        hanInput,
+        fuInput,
+        fuYakuInput,
+        mainResult,
+        detailResult,
+        toggleDetailBtn,
+        manualInputSection,
+        yakuInputSection,
+        selectedYakuList,
+        totalHan
+    };
+    
+    // リアクティブ購読設定
+    stateSubscriptions = setupStateSubscriptions(stateManager, domElements, yakuData);
+    
+    // 基本UI初期化
     setupEventListeners();
     generateScoreTable(scoreTable, scoreTableBody);
     generateYakuList(yakuData, yakuListContainer);
@@ -44,9 +68,13 @@ function initializeApp() {
     const initialHan = parseInt(hanInput.value);
     adjustFuForHanChange(initialHan);
     
-    // 役選択モードの初期制限も設定
-    const totalHan = calculateTotalHan(selectedYaku, yakuData);
-    adjustFuForYakuSelection(totalHan);
+    // 役選択モードの初期制限も設定（StateManager経由）
+    const currentState = stateManager.getState();
+    const totalHanValue = calculateTotalHan(currentState.selectedYaku, yakuData);
+    stateManager.setTotalHan(totalHanValue);
+    
+    // テスト用: StateManager動作確認
+    console.log('StateManager初期化完了:', stateManager.getState());
 }
 
 function setupEventListeners() {
@@ -108,8 +136,9 @@ function handleNumberInput(event) {
             // 手動入力モードの場合
             currentHan = parseInt(hanInput.value);
         } else {
-            // 役選択モードの場合
-            currentHan = calculateTotalHan(selectedYaku, yakuData);
+            // 役選択モードの場合（StateManager経由）
+            const currentState = stateManager.getState();
+            currentHan = calculateTotalHan(currentState.selectedYaku, yakuData);
         }
         const validFuList = validFuByHan[currentHan] || [];
         
@@ -145,8 +174,9 @@ function calculateScore() {
         han = parseInt(hanInput.value);
         fu = parseInt(fuInput.value);
     } else {
-        // 役選択モードの場合、選択された役から翻数を計算
-        han = calculateTotalHan(selectedYaku, yakuData);
+        // 役選択モードの場合、選択された役から翻数を計算（StateManager経由）
+        const currentState = stateManager.getState();
+        han = calculateTotalHan(currentState.selectedYaku, yakuData);
         fu = parseInt(fuYakuInput.value);
         
         if (han === 0) {
@@ -162,7 +192,8 @@ function calculateScore() {
     const result = calculateScoreResult(han, fu, winType, playerType);
     
     if (result) {
-        displayResult(result, han, fu, winType, playerType, inputMode, selectedYaku, yakuData, mainResult, detailResult);
+        const currentState = stateManager.getState();
+        displayResult(result, han, fu, winType, playerType, inputMode, currentState.selectedYaku, yakuData, mainResult, detailResult);
         resultSection.style.display = 'block';
         resultSection.scrollIntoView({ behavior: 'smooth' });
     } else {
@@ -222,9 +253,15 @@ function generateYakuSelectionUI() {
 }
 
 // 入力モード切り替え処理
+// 注意: この処理はリアクティブ購読システムに移行済み
 function handleInputModeChange(event) {
     const inputMode = event.target.value;
     
+    // StateManager経由で入力モードを設定
+    stateManager.setInputMode(inputMode);
+    
+    // UI更新は購読者が自動実行
+    /*
     if (inputMode === 'manual') {
         // 役選択モードから手動入力モードに切り替える時、符数を同期
         fuInput.value = fuYakuInput.value;
@@ -241,6 +278,7 @@ function handleInputModeChange(event) {
         const totalHan = calculateTotalHan(selectedYaku, yakuData);
         adjustFuForYakuSelection(totalHan);
     }
+    */
 }
 
 // 勝ち方（ロン/ツモ）切り替え処理
@@ -261,20 +299,24 @@ function handleYakuSelection(event) {
     const yakuName = event.target.value;
     const isChecked = event.target.checked;
     
+    // StateManager経由で役の追加・削除
     if (isChecked) {
-        selectedYaku.add(yakuName);
+        stateManager.addYaku(yakuName);
     } else {
-        selectedYaku.delete(yakuName);
+        stateManager.removeYaku(yakuName);
     }
     
-    updateSelectedYakuDisplay(selectedYaku, yakuData, selectedYakuList);
-    updateTotalHan();
-    updateFuInputForSpecialYaku();
+    // UI更新は購読者が自動実行するため、個別呼び出し不要
+    // updateSelectedYakuDisplay(selectedYaku, yakuData, selectedYakuList);
+    // updateTotalHan();
+    // updateFuInputForSpecialYaku();
 }
 
 // 選択された役の表示更新
 
 // 合計翻数の計算と表示更新
+// 注意: この関数はリアクティブ購読システムに移行済みのため不要
+/*
 function updateTotalHan() {
     const total = calculateTotalHan(selectedYaku, yakuData);
     totalHan.textContent = total >= 13 ? '役満' : `${total}翻`;
@@ -282,6 +324,7 @@ function updateTotalHan() {
     // 役選択モードでの符数制限適用
     adjustFuForYakuSelection(total);
 }
+*/
 
 // 選択された役から合計翻数を計算
 
@@ -291,6 +334,8 @@ function updateTotalHan() {
 // 平和の処理関数
 
 
+// 注意: この関数はリアクティブ購読システムに移行済み
+/*
 function updateFuInputForSpecialYaku() {
     const inputMode = document.querySelector('input[name="inputMode"]:checked').value;
     if (inputMode !== 'yaku') return;
@@ -340,6 +385,7 @@ function updateFuInputForSpecialYaku() {
         });
     }
 }
+*/
 
 // 翻数に基づいて符数を検証・調整する関数
 
@@ -373,6 +419,8 @@ function adjustFuForHanChange(newHan) {
 }
 
 // 役選択モードでの符数調整
+// 注意: この関数はリアクティブ購読システムに移行済み
+/*
 function adjustFuForYakuSelection(totalHan) {
     const inputMode = document.querySelector('input[name="inputMode"]:checked').value;
     
@@ -405,6 +453,7 @@ function adjustFuForYakuSelection(totalHan) {
         }
     }
 }
+*/
 
 // タッチイベントの最適化
 document.addEventListener('touchstart', function() {}, { passive: true });
