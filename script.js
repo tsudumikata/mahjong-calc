@@ -6,6 +6,7 @@ import { scoreTable } from './js/data/scoreTable.js';
 import { validFuByHan, specialYakuFuRules, DEFAULT_SETTINGS } from './js/data/constants.js';
 import { calculateScoreResult } from './js/modules/calculator.js';
 import { calculateTotalHan, hasSpecialYaku, hasPinfu, getRequiredFuForSpecialYaku, validateAndAdjustFu, getPinfuFu } from './js/modules/validator.js';
+import { generateScoreTable, generateYakuList, displayResult, updateSelectedYakuDisplay, toggleDetailDisplay } from './js/modules/display.js';
 
 // DOM要素
 const hanInput = document.getElementById('hanInput');
@@ -35,8 +36,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeApp() {
     setupEventListeners();
-    generateScoreTable();
-    generateYakuList();
+    generateScoreTable(scoreTable, scoreTableBody);
+    generateYakuList(yakuData, yakuListContainer);
     generateYakuSelectionUI();
     
     // 初期状態の符数制限を設定
@@ -58,7 +59,7 @@ function setupEventListeners() {
     calculateBtn.addEventListener('click', calculateScore);
 
     // 詳細表示切り替え
-    toggleDetailBtn.addEventListener('click', toggleDetailDisplay);
+    toggleDetailBtn.addEventListener('click', () => toggleDetailDisplay(detailResult, toggleDetailBtn));
 
     // タブ切り替え
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -161,7 +162,7 @@ function calculateScore() {
     const result = calculateScoreResult(han, fu, winType, playerType);
     
     if (result) {
-        displayResult(result, han, fu, winType, playerType, inputMode);
+        displayResult(result, han, fu, winType, playerType, inputMode, selectedYaku, yakuData, mainResult, detailResult);
         resultSection.style.display = 'block';
         resultSection.scrollIntoView({ behavior: 'smooth' });
     } else {
@@ -171,72 +172,6 @@ function calculateScore() {
 
 
 
-function displayResult(result, han, fu, winType, playerType, inputMode = 'manual') {
-    const winTypeText = winType === 'ron' ? 'ロン' : 'ツモ';
-    const playerTypeText = playerType === 'parent' ? '親' : '子';
-    
-    if (winType === 'ron') {
-        mainResult.innerHTML = `
-            <div class="result-title">${playerTypeText}・${winTypeText}</div>
-            <div class="result-score">${result.score.toLocaleString()}点</div>
-            <div class="result-name">${result.name}</div>
-        `;
-    } else {
-        mainResult.innerHTML = `
-            <div class="result-title">${playerTypeText}・${winTypeText}</div>
-            <div class="result-score">${result.score}</div>
-            <div class="result-name">${result.name}</div>
-        `;
-    }
-    
-    // 詳細表示
-    let detailHTML = `
-        <h4>計算詳細</h4>
-        <div class="detail-item">
-            <span>翻数: ${han}翻</span>
-        </div>
-        <div class="detail-item">
-            <span>符数: ${fu}符</span>
-        </div>
-        <div class="detail-item">
-            <span>和了方法: ${winTypeText}</span>
-        </div>
-        <div class="detail-item">
-            <span>親子: ${playerTypeText}</span>
-        </div>
-        <div class="detail-item">
-            <span>点数名: ${result.name}</span>
-        </div>
-    `;
-    
-    // 役選択モードの場合、選択された役も表示
-    if (inputMode === 'yaku' && selectedYaku.size > 0) {
-        detailHTML += `
-            <div class="detail-item">
-                <span>選択された役:</span>
-            </div>
-        `;
-        Array.from(selectedYaku).forEach(yakuName => {
-            const yaku = yakuData.find(y => y.name === yakuName);
-            if (yaku) {
-                detailHTML += `
-                    <div class="detail-item yaku-detail">
-                        <span>・${yaku.name} (${yaku.hanText})</span>
-                    </div>
-                `;
-            }
-        });
-    }
-    
-    detailResult.innerHTML = detailHTML;
-}
-
-function toggleDetailDisplay() {
-    const computedStyle = window.getComputedStyle(detailResult);
-    const isVisible = computedStyle.display !== 'none';
-    detailResult.style.display = isVisible ? 'none' : 'block';
-    toggleDetailBtn.textContent = isVisible ? '詳細を表示' : '詳細を隠す';
-}
 
 function handleTabSwitch(event) {
     const targetTab = event.target.dataset.tab;
@@ -254,35 +189,6 @@ function handleTabSwitch(event) {
     document.getElementById(targetTab).classList.add('active');
 }
 
-function generateScoreTable() {
-    const displayRows = scoreTable.filter(entry => entry.han <= 4 || entry.fu === 0);
-    
-    displayRows.forEach(entry => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${entry.han}翻</td>
-            <td>${entry.fu > 0 ? entry.fu + '符' : '—'}</td>
-            <td>${entry.childRon.toLocaleString()}</td>
-            <td>${entry.childTsumo}</td>
-            <td>${entry.parentRon.toLocaleString()}</td>
-            <td>${entry.parentTsumo}</td>
-        `;
-        scoreTableBody.appendChild(row);
-    });
-}
-
-function generateYakuList() {
-    yakuData.forEach(yaku => {
-        const yakuItem = document.createElement('div');
-        yakuItem.className = 'yaku-item';
-        yakuItem.innerHTML = `
-            <div class="yaku-name">${yaku.name}</div>
-            <div class="yaku-han">${yaku.hanText}</div>
-            <div class="yaku-description">${yaku.description}</div>
-        `;
-        yakuListContainer.appendChild(yakuItem);
-    });
-}
 
 // 新しい役選択UIを生成
 function generateYakuSelectionUI() {
@@ -361,25 +267,12 @@ function handleYakuSelection(event) {
         selectedYaku.delete(yakuName);
     }
     
-    updateSelectedYakuDisplay();
+    updateSelectedYakuDisplay(selectedYaku, yakuData, selectedYakuList);
     updateTotalHan();
     updateFuInputForSpecialYaku();
 }
 
 // 選択された役の表示更新
-function updateSelectedYakuDisplay() {
-    if (selectedYaku.size === 0) {
-        selectedYakuList.textContent = '役を選択してください';
-        return;
-    }
-    
-    const yakuNames = Array.from(selectedYaku).map(yakuName => {
-        const yaku = yakuData.find(y => y.name === yakuName);
-        return `${yaku.name} (${yaku.hanText})`;
-    });
-    
-    selectedYakuList.innerHTML = yakuNames.join('<br>');
-}
 
 // 合計翻数の計算と表示更新
 function updateTotalHan() {
