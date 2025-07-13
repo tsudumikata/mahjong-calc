@@ -1,6 +1,25 @@
 import { test, expect } from '@playwright/test';
 import { setHanValue, setFuValue, setFuValueForYakuMode } from './test-utils.js';
 
+// デフォルト値定数
+const DEFAULT_VALUES = {
+  han: '1',
+  fu: '30',
+  winType: 'ron',
+  playerType: 'parent',
+  inputMode: 'manual'
+};
+
+// テスト用役データ定数（実際のアプリケーションデータと一致）
+const TEST_YAKU = {
+  RIICHI: '立直',           // "リーチ"ではなく"立直"
+  TANYAO: '断幺九',         // "断ヤオ九"ではなく"断幺九" 
+  IPPEIKO: '一盃口',
+  MENZEN_TSUMO: '門前清自摸和',
+  YAKUHAI: '役牌',          // "ドラ"の代替として実在する役を使用
+  PINFU: '平和'             // 追加のテスト用役
+};
+
 test.describe('リセット機能テスト', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
@@ -30,8 +49,8 @@ test.describe('リセット機能テスト', () => {
     await page.locator('#resetBtn').click();
     
     // 初期値に戻っているか確認
-    await expect(page.locator('#hanInput')).toHaveValue('1');
-    await expect(page.locator('#fuInput')).toHaveValue('30');
+    await expect(page.locator('#hanInput')).toHaveValue(DEFAULT_VALUES.han);
+    await expect(page.locator('#fuInput')).toHaveValue(DEFAULT_VALUES.fu);
   });
 
   test('手動入力モードでのリセット動作 - 和了方法と親子の初期化', async ({ page }) => {
@@ -50,8 +69,8 @@ test.describe('リセット機能テスト', () => {
     await page.locator('#resetBtn').click();
     
     // 初期値に戻っているか確認
-    await expect(page.locator('input[name="winType"][value="ron"]')).toBeChecked();
-    await expect(page.locator('input[name="playerType"][value="parent"]')).toBeChecked();
+    await expect(page.locator(`input[name="winType"][value="${DEFAULT_VALUES.winType}"]`)).toBeChecked();
+    await expect(page.locator(`input[name="playerType"][value="${DEFAULT_VALUES.playerType}"]`)).toBeChecked();
   });
 
   test('役選択モードでのリセット動作 - 入力モードの初期化', async ({ page }) => {
@@ -66,7 +85,7 @@ test.describe('リセット機能テスト', () => {
     await page.locator('#resetBtn').click();
     
     // 手動入力モードに戻っているか確認
-    await expect(page.locator('input[name="inputMode"][value="manual"]')).toBeChecked();
+    await expect(page.locator(`input[name="inputMode"][value="${DEFAULT_VALUES.inputMode}"]`)).toBeChecked();
     await expect(page.locator('.manual-input-section')).toBeVisible();
     await expect(page.locator('.yaku-input-section')).toBeHidden();
   });
@@ -75,19 +94,19 @@ test.describe('リセット機能テスト', () => {
     // 役選択モードに切り替え
     await page.locator('label:has(input[name="inputMode"][value="yaku"])').click();
     
-    // いくつかの役を選択（リーチ、一盃口、ドラなど）
-    const reachCheckbox = page.locator('input[type="checkbox"][value="リーチ"]');
-    const ippeikoCheckbox = page.locator('input[type="checkbox"][value="一盃口"]');
+    // 役選択セクションの表示を待機
+    await expect(page.locator('.yaku-input-section')).toBeVisible();
     
-    if (await reachCheckbox.isVisible()) {
-      await reachCheckbox.check();
-      await expect(reachCheckbox).toBeChecked();
-    }
+    // いくつかの役を選択（推奨セレクタでアクセス）
+    const riichiCheckbox = page.locator(`label.yaku-checkbox:has(input[value="${TEST_YAKU.RIICHI}"])`);
+    const ippeikoCheckbox = page.locator(`label.yaku-checkbox:has(input[value="${TEST_YAKU.IPPEIKO}"])`);
     
-    if (await ippeikoCheckbox.isVisible()) {
-      await ippeikoCheckbox.check();
-      await expect(ippeikoCheckbox).toBeChecked();
-    }
+    // 役要素をクリックして選択
+    await riichiCheckbox.click();
+    await expect(riichiCheckbox.locator('input')).toBeChecked();
+    
+    await ippeikoCheckbox.click();
+    await expect(ippeikoCheckbox.locator('input')).toBeChecked();
     
     // 符数も変更
     await setFuValueForYakuMode(page, 40);
@@ -97,8 +116,8 @@ test.describe('リセット機能テスト', () => {
     await page.locator('#resetBtn').click();
     
     // 手動入力モードに戻り、すべてが初期化されているか確認
-    await expect(page.locator('input[name="inputMode"][value="manual"]')).toBeChecked();
-    await expect(page.locator('#fuInput')).toHaveValue('30');
+    await expect(page.locator(`input[name="inputMode"][value="${DEFAULT_VALUES.inputMode}"]`)).toBeChecked();
+    await expect(page.locator('#fuInput')).toHaveValue(DEFAULT_VALUES.fu);
     
     // 選択された役の表示も初期化されているか確認（役選択モードに戻って確認）
     await page.locator('label:has(input[name="inputMode"][value="yaku"])').click();
@@ -128,10 +147,10 @@ test.describe('リセット機能テスト', () => {
     
     // 計算結果が非表示になり、入力値が初期化されることを確認
     await expect(page.locator('#resultSection')).toBeHidden();
-    await expect(page.locator('#hanInput')).toHaveValue('1');
-    await expect(page.locator('#fuInput')).toHaveValue('30');
-    await expect(page.locator('input[name="winType"][value="ron"]')).toBeChecked();
-    await expect(page.locator('input[name="playerType"][value="parent"]')).toBeChecked();
+    await expect(page.locator('#hanInput')).toHaveValue(DEFAULT_VALUES.han);
+    await expect(page.locator('#fuInput')).toHaveValue(DEFAULT_VALUES.fu);
+    await expect(page.locator(`input[name="winType"][value="${DEFAULT_VALUES.winType}"]`)).toBeChecked();
+    await expect(page.locator(`input[name="playerType"][value="${DEFAULT_VALUES.playerType}"]`)).toBeChecked();
   });
 
   test('包括的なリセットテスト - 複数項目変更後の一括初期化', async ({ page }) => {
@@ -145,11 +164,12 @@ test.describe('リセット機能テスト', () => {
     // 役選択モードに切り替えて役を選択
     await page.locator('label:has(input[name="inputMode"][value="yaku"])').click();
     
-    // 役を選択（存在すれば）
-    const tanYaoCheckbox = page.locator('input[type="checkbox"][value="断ヤオ九"]');
-    if (await tanYaoCheckbox.isVisible()) {
-      await tanYaoCheckbox.check();
-    }
+    // 役選択セクションの表示を待機
+    await expect(page.locator('.yaku-input-section')).toBeVisible();
+    
+    // 役を選択（推奨セレクタでアクセス）
+    const tanyaoCheckbox = page.locator(`label.yaku-checkbox:has(input[value="${TEST_YAKU.TANYAO}"])`);
+    await tanyaoCheckbox.click();
     
     // 符数も変更
     await setFuValueForYakuMode(page, 80);
@@ -161,11 +181,11 @@ test.describe('リセット機能テスト', () => {
     await page.locator('#resetBtn').click();
     
     // すべてが完全に初期化されていることを確認
-    await expect(page.locator('input[name="inputMode"][value="manual"]')).toBeChecked();
-    await expect(page.locator('#hanInput')).toHaveValue('1');
-    await expect(page.locator('#fuInput')).toHaveValue('30');
-    await expect(page.locator('input[name="winType"][value="ron"]')).toBeChecked();
-    await expect(page.locator('input[name="playerType"][value="parent"]')).toBeChecked();
+    await expect(page.locator(`input[name="inputMode"][value="${DEFAULT_VALUES.inputMode}"]`)).toBeChecked();
+    await expect(page.locator('#hanInput')).toHaveValue(DEFAULT_VALUES.han);
+    await expect(page.locator('#fuInput')).toHaveValue(DEFAULT_VALUES.fu);
+    await expect(page.locator(`input[name="winType"][value="${DEFAULT_VALUES.winType}"]`)).toBeChecked();
+    await expect(page.locator(`input[name="playerType"][value="${DEFAULT_VALUES.playerType}"]`)).toBeChecked();
     await expect(page.locator('#resultSection')).toBeHidden();
     await expect(page.locator('.manual-input-section')).toBeVisible();
     await expect(page.locator('.yaku-input-section')).toBeHidden();
@@ -175,25 +195,28 @@ test.describe('リセット機能テスト', () => {
     // 役選択モードで特殊な状態を作成（5翻以上で符数ボタン無効化など）
     await page.locator('label:has(input[name="inputMode"][value="yaku"])').click();
     
-    // 高翻数の役を選択（存在すれば）
-    const menzenchintsumoCheckbox = page.locator('input[type="checkbox"][value="門前清自摸和"]');
-    const richiCheckbox = page.locator('input[type="checkbox"][value="リーチ"]');
-    const tanyaoCheckbox = page.locator('input[type="checkbox"][value="断ヤオ九"]');
-    const ippeikoCheckbox = page.locator('input[type="checkbox"][value="一盃口"]');
-    const doraCheckbox = page.locator('input[type="checkbox"][value="ドラ"]');
+    // 役選択セクションの表示を待機
+    await expect(page.locator('.yaku-input-section')).toBeVisible();
     
-    // 複数の役を選択して高翻数にする
-    if (await richiCheckbox.isVisible()) await richiCheckbox.check();
-    if (await menzenchintsumoCheckbox.isVisible()) await menzenchintsumoCheckbox.check();
-    if (await tanyaoCheckbox.isVisible()) await tanyaoCheckbox.check();
-    if (await ippeikoCheckbox.isVisible()) await ippeikoCheckbox.check();
-    if (await doraCheckbox.isVisible()) await doraCheckbox.check();
+    // 高翻数の役を選択（推奨セレクタでアクセス）
+    const menzenchintsumoCheckbox = page.locator(`label.yaku-checkbox:has(input[value="${TEST_YAKU.MENZEN_TSUMO}"])`);
+    const riichiCheckbox = page.locator(`label.yaku-checkbox:has(input[value="${TEST_YAKU.RIICHI}"])`);
+    const tanyaoCheckbox = page.locator(`label.yaku-checkbox:has(input[value="${TEST_YAKU.TANYAO}"])`);
+    const ippeikoCheckbox = page.locator(`label.yaku-checkbox:has(input[value="${TEST_YAKU.IPPEIKO}"])`);
+    const yakuhaiCheckbox = page.locator(`label.yaku-checkbox:has(input[value="${TEST_YAKU.YAKUHAI}"])`);
+    
+    // 複数の役を選択して高翻数にする（ラベルクリック）
+    await riichiCheckbox.click();
+    await menzenchintsumoCheckbox.click();
+    await tanyaoCheckbox.click();
+    await ippeikoCheckbox.click();
+    await yakuhaiCheckbox.click();
     
     // リセットボタンをクリック
     await page.locator('#resetBtn').click();
     
     // 手動入力モードに戻り、すべてのボタンが有効化されていることを確認
-    await expect(page.locator('input[name="inputMode"][value="manual"]')).toBeChecked();
+    await expect(page.locator(`input[name="inputMode"][value="${DEFAULT_VALUES.inputMode}"]`)).toBeChecked();
     
     // 翻数ボタンの有効化確認
     await expect(page.locator('[data-action="increase"][data-target="han"]')).toBeEnabled();
@@ -215,8 +238,8 @@ test.describe('リセット機能テスト', () => {
       await page.locator('#resetBtn').click();
       
       // 初期化確認
-      await expect(page.locator('#hanInput')).toHaveValue('1');
-      await expect(page.locator('#fuInput')).toHaveValue('30');
+      await expect(page.locator('#hanInput')).toHaveValue(DEFAULT_VALUES.han);
+      await expect(page.locator('#fuInput')).toHaveValue(DEFAULT_VALUES.fu);
     }
   });
 });
