@@ -245,6 +245,9 @@ export class EventHandlers {
         // 計算ボタン (Phase3b-3: EventHandlers内で処理)
         this.elements.calculateBtn.addEventListener('click', () => this.calculateScore());
 
+        // リセットボタン (Issue #5: リセット機能)
+        this.elements.resetBtn.addEventListener('click', () => this.handleResetButton());
+
         // 詳細表示切り替え
         this.elements.toggleDetailBtn.addEventListener('click', () => 
             toggleDetailDisplay(this.elements.detailResult, this.elements.toggleDetailBtn)
@@ -301,6 +304,20 @@ export class EventHandlers {
         // 翻数の同期（初期値）
         const initialHan = parseInt(this.elements.hanInput.value) || 1;
         this.stateManager.setHan(initialHan);
+    }
+
+    /**
+     * リセットボタン処理
+     * Issue #5: 全入力値と計算結果をリセット
+     */
+    handleResetButton() {
+        // StateManagerのリセット機能を呼び出し
+        this.stateManager.resetState();
+        
+        // 計算結果セクションを非表示
+        this.elements.resultSection.style.display = 'none';
+        
+        // UI更新は stateSubscriptions.js の購読者が自動実行される
     }
 
     /**
