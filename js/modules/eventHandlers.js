@@ -317,7 +317,66 @@ export class EventHandlers {
         // 計算結果セクションを非表示
         this.elements.resultSection.style.display = 'none';
         
+        // DOM要素の明示的な初期化（StateManagerとHTML要素の同期）
+        this.resetFormElements();
+        
         // UI更新は stateSubscriptions.js の購読者が自動実行される
+    }
+
+    /**
+     * フォーム要素の明示的な初期化
+     * Issue #5: StateManagerとHTML要素の同期を確実に行う
+     */
+    resetFormElements() {
+        // 入力モードを「手動入力」に戻す
+        const manualModeRadio = document.querySelector('input[name="inputMode"][value="manual"]');
+        if (manualModeRadio) manualModeRadio.checked = true;
+        
+        // 和了方法を「ロン」に戻す
+        const ronRadio = document.querySelector('input[name="winType"][value="ron"]');
+        if (ronRadio) ronRadio.checked = true;
+        
+        // 親子を「親」に戻す
+        const parentRadio = document.querySelector('input[name="playerType"][value="parent"]');
+        if (parentRadio) parentRadio.checked = true;
+        
+        // 翻数を1に戻す
+        if (this.elements.hanInput) this.elements.hanInput.value = '1';
+        
+        // 符数を30に戻す
+        if (this.elements.fuInput) this.elements.fuInput.value = '30';
+        if (this.elements.fuYakuInput) this.elements.fuYakuInput.value = '30';
+        
+        // 役選択をすべてクリア
+        const yakuCheckboxes = document.querySelectorAll('.yaku-input-section input[type="checkbox"]');
+        yakuCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        // 選択された役の表示をクリア
+        if (this.elements.selectedYakuList) {
+            this.elements.selectedYakuList.textContent = '役を選択してください';
+        }
+        
+        // 合計翻数表示をクリア
+        if (this.elements.totalHan) {
+            this.elements.totalHan.textContent = '0翻';
+        }
+        
+        // 入力セクションの表示切り替え（手動入力を表示、役選択を非表示）
+        if (this.elements.manualInputSection) {
+            this.elements.manualInputSection.style.display = 'block';
+        }
+        if (this.elements.yakuInputSection) {
+            this.elements.yakuInputSection.style.display = 'none';
+        }
+        
+        // 符数ボタンの有効化（無効状態をクリア）
+        const fuButtons = document.querySelectorAll('[data-target="fu"], [data-target="fuYaku"]');
+        fuButtons.forEach(btn => {
+            btn.disabled = false;
+            btn.classList.remove('disabled');
+        });
     }
 
     /**
