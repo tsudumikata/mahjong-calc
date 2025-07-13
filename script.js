@@ -16,6 +16,7 @@ const hanInput = document.getElementById('hanInput');
 const fuInput = document.getElementById('fuInput');
 const fuYakuInput = document.getElementById('fuYakuInput');
 const calculateBtn = document.getElementById('calculateBtn');
+const resetBtn = document.getElementById('resetBtn');
 const resultSection = document.getElementById('resultSection');
 const mainResult = document.getElementById('mainResult');
 const detailResult = document.getElementById('detailResult');
@@ -49,6 +50,7 @@ function initializeApp() {
         fuInput,
         fuYakuInput,
         calculateBtn,
+        resetBtn,
         resultSection,
         mainResult,
         detailResult,

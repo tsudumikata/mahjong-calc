@@ -194,12 +194,13 @@ body {
 
 /* 計算ボタン */
 .calculate-section {
-    text-align: center;
+    display: flex;
+    gap: 12px;
     margin-bottom: 24px;
 }
 
 .calculate-btn {
-    width: 100%;
+    flex: 2;
     height: 56px;
     background: linear-gradient(135deg, #1a472a 0%, #2d5a37 100%);
     color: white;
@@ -218,6 +219,29 @@ body {
 }
 
 .calculate-btn:active {
+    transform: translateY(0);
+}
+
+.reset-btn {
+    flex: 1;
+    height: 56px;
+    background: linear-gradient(135deg, #666 0%, #777 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 102, 102, 0.3);
+}
+
+.reset-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 102, 102, 0.4);
+}
+
+.reset-btn:active {
     transform: translateY(0);
 }
 
