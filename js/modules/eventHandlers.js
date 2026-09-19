@@ -218,13 +218,17 @@ export class EventHandlers {
             yakuList.forEach(yaku => {
                 const yakuCheckbox = document.createElement('label');
                 yakuCheckbox.className = 'yaku-checkbox';
-                yakuCheckbox.innerHTML = `
-                    <input type="checkbox" value="${yaku.name}" data-han="${yaku.han}">
-                    <span class="checkbox-custom"></span>
-                    <span class="yaku-text">${yaku.name}</span>
-                `;
-                
-                const checkbox = yakuCheckbox.querySelector('input[type="checkbox"]');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = yaku.name;
+                checkbox.dataset.han = String(yaku.han);
+                const customCheckbox = document.createElement('span');
+                customCheckbox.className = 'checkbox-custom';
+                const yakuText = document.createElement('span');
+                yakuText.className = 'yaku-text';
+                yakuText.textContent = yaku.name;
+                yakuCheckbox.append(checkbox, customCheckbox, yakuText);
+
                 checkbox.addEventListener('change', (event) => this.handleYakuSelection(event));
                 
                 container.appendChild(yakuCheckbox);
