@@ -11,14 +11,14 @@ export function generateScoreTable(scoreTableData, containerElement) {
     
     displayRows.forEach(entry => {
         const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${entry.han}翻</td>
-            <td>${entry.fu > 0 ? entry.fu + '符' : '—'}</td>
-            <td>${entry.childRon.toLocaleString()}</td>
-            <td>${entry.childTsumo}</td>
-            <td>${entry.parentRon.toLocaleString()}</td>
-            <td>${entry.parentTsumo}</td>
-        `;
+        [
+            `${entry.han}翻`,
+            entry.fu > 0 ? `${entry.fu}符` : '—',
+            entry.childRon.toLocaleString(),
+            entry.childTsumo,
+            entry.parentRon.toLocaleString(),
+            entry.parentTsumo
+        ].forEach(value => appendTextElement(row, 'td', value));
         containerElement.appendChild(row);
     });
 }
@@ -32,11 +32,9 @@ export function generateYakuList(yakuDataArray, containerElement) {
     yakuDataArray.forEach(yaku => {
         const yakuItem = document.createElement('div');
         yakuItem.className = 'yaku-item';
-        yakuItem.innerHTML = `
-            <div class="yaku-name">${yaku.name}</div>
-            <div class="yaku-han">${yaku.hanText}</div>
-            <div class="yaku-description">${yaku.description}</div>
-        `;
+        appendTextElement(yakuItem, 'div', yaku.name, 'yaku-name');
+        appendTextElement(yakuItem, 'div', yaku.hanText, 'yaku-han');
+        appendTextElement(yakuItem, 'div', yaku.description, 'yaku-description');
         containerElement.appendChild(yakuItem);
     });
 }
@@ -59,59 +57,29 @@ export function displayResult(result, han, fu, winType, playerType, inputMode = 
     const playerTypeText = playerType === 'parent' ? '親' : '子';
     
     if (winType === 'ron') {
-        mainResultElement.innerHTML = `
-            <div class="result-title">${playerTypeText}・${winTypeText}</div>
-            <div class="result-score">${result.score.toLocaleString()}点</div>
-            <div class="result-name">${result.name}</div>
-        `;
+        replaceResult(mainResultElement, playerTypeText, winTypeText, `${result.score.toLocaleString()}点`, result.name);
     } else {
-        mainResultElement.innerHTML = `
-            <div class="result-title">${playerTypeText}・${winTypeText}</div>
-            <div class="result-score">${result.score}</div>
-            <div class="result-name">${result.name}</div>
-        `;
+        replaceResult(mainResultElement, playerTypeText, winTypeText, result.score, result.name);
     }
     
     // 詳細表示
-    let detailHTML = `
-        <h4>計算詳細</h4>
-        <div class="detail-item">
-            <span>翻数: ${han}翻</span>
-        </div>
-        <div class="detail-item">
-            <span>符数: ${fu}符</span>
-        </div>
-        <div class="detail-item">
-            <span>和了方法: ${winTypeText}</span>
-        </div>
-        <div class="detail-item">
-            <span>親子: ${playerTypeText}</span>
-        </div>
-        <div class="detail-item">
-            <span>点数名: ${result.name}</span>
-        </div>
-    `;
+    detailResultElement.replaceChildren();
+    appendTextElement(detailResultElement, 'h4', '計算詳細');
+    [`翻数: ${han}翻`, `符数: ${fu}符`, `和了方法: ${winTypeText}`,
+        `親子: ${playerTypeText}`, `点数名: ${result.name}`]
+        .forEach(text => appendDetailItem(detailResultElement, text));
     
     // 役選択モードの場合、選択された役も表示
     if (inputMode === 'yaku' && selectedYakuSet.size > 0) {
-        detailHTML += `
-            <div class="detail-item">
-                <span>選択された役:</span>
-            </div>
-        `;
+        appendDetailItem(detailResultElement, '選択された役:');
         Array.from(selectedYakuSet).forEach(yakuName => {
             const yaku = yakuDataArray.find(y => y.name === yakuName);
             if (yaku) {
-                detailHTML += `
-                    <div class="detail-item yaku-detail">
-                        <span>・${yaku.name} (${yaku.hanText})</span>
-                    </div>
-                `;
+                appendDetailItem(detailResultElement, `・${yaku.name} (${yaku.hanText})`, 'yaku-detail');
             }
         });
     }
     
-    detailResultElement.innerHTML = detailHTML;
 }
 
 /**
@@ -128,10 +96,36 @@ export function updateSelectedYakuDisplay(selectedYakuSet, yakuDataArray, select
     
     const yakuNames = Array.from(selectedYakuSet).map(yakuName => {
         const yaku = yakuDataArray.find(y => y.name === yakuName);
-        return `${yaku.name} (${yaku.hanText})`;
+        return yaku ? `${yaku.name} (${yaku.hanText})` : null;
+    }).filter(Boolean);
+
+    selectedYakuListElement.replaceChildren();
+    yakuNames.forEach((name, index) => {
+        if (index > 0) selectedYakuListElement.appendChild(document.createElement('br'));
+        selectedYakuListElement.appendChild(document.createTextNode(name));
     });
-    
-    selectedYakuListElement.innerHTML = yakuNames.join('<br>');
+}
+
+function appendTextElement(parent, tagName, text, className) {
+    const element = document.createElement(tagName);
+    if (className) element.className = className;
+    element.textContent = String(text);
+    parent.appendChild(element);
+    return element;
+}
+
+function replaceResult(container, playerType, winType, score, resultName) {
+    container.replaceChildren();
+    appendTextElement(container, 'div', `${playerType}・${winType}`, 'result-title');
+    appendTextElement(container, 'div', score, 'result-score');
+    appendTextElement(container, 'div', resultName, 'result-name');
+}
+
+function appendDetailItem(container, text, additionalClass = '') {
+    const item = document.createElement('div');
+    item.className = `detail-item${additionalClass ? ` ${additionalClass}` : ''}`;
+    appendTextElement(item, 'span', text);
+    container.appendChild(item);
 }
 
 /**
