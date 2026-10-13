@@ -88,7 +88,7 @@ export class EventHandlers {
         if (currentState.inputMode === 'manual') {
             // 手動入力モードでの調整
             const currentFu = parseInt(this.elements.fuInput.value);
-            const adjustedFu = validateAndAdjustFu(newHan, currentFu);
+            const adjustedFu = validateAndAdjustFu(newHan, currentFu, validFuByHan);
             
             if (adjustedFu !== null) {
                 this.elements.fuInput.value = adjustedFu;
