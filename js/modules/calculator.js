@@ -16,8 +16,9 @@ export function getScoreFromTable(han, fu, winType, playerType, scoreTableData =
     // 役満の場合
     if (han >= 13) {
         return {
-            score: playerType === 'parent' ? 48000 : 32000,
-            tsumoScore: playerType === 'parent' ? "16000" : "8000/16000"
+            score: winType === 'ron' ?
+                (playerType === 'parent' ? 48000 : 32000) :
+                (playerType === 'parent' ? "16000" : "8000/16000")
         };
     }
     

@@ -142,22 +142,29 @@ test.describe('麻雀点数計算機 計算機能テスト', () => {
     await expect(page.locator('#mainResult')).toContainText('24,000点');
   });
 
-  test('手動入力モード: 役満計算', async ({ page }) => {
-    // 手動入力モードを選択
-    await page.locator('label:has(input[name="inputMode"][value="manual"])').click();
-    
-    // 子・ロンを選択
-    await page.locator('label:has(input[name="winType"][value="ron"])').click();
-    await page.locator('label:has(input[name="playerType"][value="child"])').click();
-    
-    // 13翻の計算（役満）
-    await setHanValue(page, 13);
-    await setFuValue(page, 30);
-    await page.locator('#calculateBtn').click();
-    
-    await expect(page.locator('#resultSection')).toBeVisible();
-    await expect(page.locator('#mainResult')).toContainText('32,000点');
-  });
+  const yakumanCases = [
+    { playerType: 'child', winType: 'ron', title: '子・ロン', score: '32,000点' },
+    { playerType: 'child', winType: 'tsumo', title: '子・ツモ', score: '8000/16000' },
+    { playerType: 'parent', winType: 'ron', title: '親・ロン', score: '48,000点' },
+    { playerType: 'parent', winType: 'tsumo', title: '親・ツモ', score: '16000' }
+  ];
+
+  for (const { playerType, winType, title, score } of yakumanCases) {
+    test(`手動入力モード: 役満計算 ${title}`, async ({ page }) => {
+      await page.locator('label:has(input[name="inputMode"][value="manual"])').click();
+      await page.locator(`label:has(input[name="winType"][value="${winType}"])`).click();
+      await page.locator(`label:has(input[name="playerType"][value="${playerType}"])`).click();
+
+      await setHanValue(page, 13);
+      await expect(page.locator('#hanInput')).toHaveValue('13');
+      await page.locator('#calculateBtn').click();
+
+      await expect(page.locator('#resultSection')).toBeVisible();
+      await expect(page.locator('#mainResult .result-title')).toHaveText(title);
+      await expect(page.locator('#mainResult .result-score')).toHaveText(score);
+      await expect(page.locator('#mainResult .result-name')).toHaveText('役満');
+    });
+  }
 
   test('符数の境界値テスト', async ({ page }) => {
     // 手動入力モードを選択

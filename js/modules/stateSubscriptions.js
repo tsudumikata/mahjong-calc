@@ -2,7 +2,7 @@
 
 import { calculateTotalHan, hasSpecialYaku, getRequiredFuForSpecialYaku, validateAndAdjustFu, getPinfuFu } from './validator.js';
 import { updateSelectedYakuDisplay } from './display.js';
-import { specialYakuFuRules } from '../data/constants.js';
+import { specialYakuFuRules, validFuByHan } from '../data/constants.js';
 
 // メイン購読設定関数
 export function setupStateSubscriptions(stateManager, domElements, yakuData) {
@@ -147,7 +147,7 @@ function adjustFuForYakuSelection(totalHan, currentState, domElements, stateMana
     }
     
     // 符数の検証・調整
-    const adjustedFu = validateAndAdjustFu(totalHan, currentState.currentFu);
+    const adjustedFu = validateAndAdjustFu(totalHan, currentState.currentFu, validFuByHan);
     if (adjustedFu !== null && adjustedFu !== currentState.currentFu) {
         stateManager.setFu(adjustedFu);
     }
