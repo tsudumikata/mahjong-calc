@@ -69,20 +69,26 @@
 2. ブラウザメニューから「ホーム画面に追加」
 3. アプリアイコンがホーム画面に追加されます
 
-### ローカルで実行（開発者向け）
+### ローカルで実行
+Node.js と npm が必要です。
+
 ```bash
 # リポジトリをクローン
 git clone https://github.com/tsudumikata/mahjong-calc.git
 cd mahjong-calc
 
 # 依存関係をインストール
-npm install
+npm ci
 
 # ローカルサーバーを起動
 npm run serve
 
-# http://localhost:3000 でアクセス
+# http://localhost:3000/ でアクセス
 ```
+
+ブラウザで http://localhost:3000/ を開くと、`index.html` でアプリを利用できます。`index-local.html` は起動手順を表示する案内ページです。`file://` でのアプリ起動には対応していません。詳しくは [ローカル利用ガイド](README-LOCAL.md) を参照してください。
+
+3000番ポートが使用中で別の URL が表示された場合は、ターミナルに表示された URL を開いてください。
 
 ## 🎲 対応している麻雀ルール
 
