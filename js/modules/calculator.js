@@ -3,6 +3,11 @@
 
 import { scoreTable } from '../data/scoreTable.js';
 
+// 切り上げ満貫は適用しない（3翻60符・4翻30符は通常点）。
+function isMangan(han, fu) {
+    return han === 5 || (han === 3 && fu >= 70) || (han === 4 && fu >= 40);
+}
+
 /**
  * 翻数・符数・和了方法・親子から点数を取得
  * @param {number} han - 翻数
@@ -22,9 +27,10 @@ export function getScoreFromTable(han, fu, winType, playerType, scoreTableData =
         };
     }
     
-    // 跳満以上の場合
-    if (han >= 5) {
-        const entry = scoreTableData.find(entry => entry.han === han);
+    // 満貫以上の場合（3翻70符以上・4翻40符以上も5翻の点数を使用）
+    if (han >= 5 || isMangan(han, fu)) {
+        const scoreHan = isMangan(han, fu) ? 5 : han;
+        const entry = scoreTableData.find(entry => entry.han === scoreHan);
         if (entry) {
             return {
                 score: winType === 'ron' ? 
@@ -58,7 +64,7 @@ export function getScoreName(han, fu) {
     if (han >= 11) return "三倍満";
     if (han >= 8) return "倍満";
     if (han >= 6) return "跳満";
-    if (han === 5) return "満貫";
+    if (isMangan(han, fu)) return "満貫";
     return `${han}翻${fu}符`;
 }
 
