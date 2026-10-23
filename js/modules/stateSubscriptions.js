@@ -10,13 +10,16 @@ export function setupStateSubscriptions(stateManager, domElements, yakuData) {
 
     // 役選択状態の変更を購読
     subscriptions.push(
-        stateManager.subscribe('selectedYaku', (newYaku, oldYaku) => {
+        stateManager.subscribe('selectedYaku', (newYaku) => {
             // 選択された役の表示更新
             updateSelectedYakuDisplay(newYaku, yakuData, domElements.selectedYakuList);
-            
+
             // 合計翻数の再計算
             const totalHan = calculateTotalHan(newYaku, yakuData);
             stateManager.setTotalHan(totalHan);
+
+            // 合計翻数が変わらない役の入れ替えでも符数ルールを適用
+            updateFuForYakuSelection(stateManager.getState(), stateManager);
         })
     );
 
@@ -25,18 +28,12 @@ export function setupStateSubscriptions(stateManager, domElements, yakuData) {
         stateManager.subscribe('totalHan', (newHan) => {
             // 翻数表示の更新
             updateTotalHanDisplay(newHan, domElements.totalHan);
-            
-            // 役選択モードでの符数制限適用
-            const currentState = stateManager.getState();
-            if (currentState.inputMode === 'yaku') {
-                adjustFuForYakuSelection(newHan, currentState, domElements, stateManager);
-            }
         })
     );
 
     // 入力モードの変更を購読
     subscriptions.push(
-        stateManager.subscribe('inputMode', (newMode, oldMode) => {
+        stateManager.subscribe('inputMode', (newMode) => {
             // 入力セクションの表示切り替え
             toggleInputSections(newMode, domElements);
             
@@ -44,7 +41,7 @@ export function setupStateSubscriptions(stateManager, domElements, yakuData) {
             synchronizeFuInputs(newMode, domElements, stateManager);
             
             // モード変更時の特殊処理
-            handleInputModeChange(newMode, oldMode, stateManager, domElements, yakuData);
+            updateFuForYakuSelection(stateManager.getState(), stateManager);
         })
     );
 
@@ -129,25 +126,12 @@ function synchronizeFuDisplays(fu, inputMode, domElements) {
     }
 }
 
-// 入力モード変更時の特殊処理
-function handleInputModeChange(newMode, oldMode, stateManager, domElements, yakuData) {
-    const currentState = stateManager.getState();
-    
-    if (newMode === 'yaku') {
-        // 役選択モードに切り替え時は特殊役の処理を実行
-        updateFuInputForSpecialYaku(currentState, stateManager, domElements, yakuData);
-    }
-}
-
 // 役選択モードでの符数調整
-function adjustFuForYakuSelection(totalHan, currentState, domElements, stateManager) {
-    // 特殊役の処理が優先される場合はそちらに任せる
-    if (hasSpecialYaku(currentState.selectedYaku, specialYakuFuRules)) {
-        return;
-    }
-    
+function adjustFuForYakuSelection(totalHan, currentState, stateManager) {
     // 符数の検証・調整
-    const adjustedFu = validateAndAdjustFu(totalHan, currentState.currentFu, validFuByHan);
+    // 七対子解除後の25符は通常の30符に戻し、10符刻みの操作を可能にする
+    const currentFu = currentState.currentFu === 25 ? 30 : currentState.currentFu;
+    const adjustedFu = validateAndAdjustFu(totalHan, currentFu, validFuByHan);
     if (adjustedFu !== null && adjustedFu !== currentState.currentFu) {
         stateManager.setFu(adjustedFu);
     }
@@ -167,8 +151,8 @@ function adjustFuForYakuSelection(totalHan, currentState, domElements, stateMana
     }
 }
 
-// 特殊役の符数処理
-function updateFuInputForSpecialYaku(currentState, stateManager, domElements, yakuData) {
+// 選択役と入力モードに応じた符数・入力可否をまとめて更新
+function updateFuForYakuSelection(currentState, stateManager) {
     if (currentState.inputMode !== 'yaku') return;
     
     // 1. 固定符数の特殊役（七対子など）を最優先で処理
@@ -201,11 +185,7 @@ function updateFuInputForSpecialYaku(currentState, stateManager, domElements, ya
     }
     
     // 3. 通常の符数制限を適用
-    const fuButtons = document.querySelectorAll('[data-target="fuYaku"]');
-    fuButtons.forEach(btn => {
-        btn.disabled = false;
-        btn.classList.remove('disabled');
-    });
+    adjustFuForYakuSelection(currentState.totalHan, currentState, stateManager);
 }
 
 // 和了タイプ変更時の符数更新

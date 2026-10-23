@@ -42,20 +42,21 @@ test.describe('符数検証の回帰テスト', () => {
     await expect(page.locator('#fuInput')).toHaveValue('40');
   });
 
-  test('手動入力で翻数変更に合わせて符数を補正する', async ({ page }) => {
+  test('手動入力で満貫の符数を保持し、1翻の下限を補正する', async ({ page }) => {
     const increaseHan = page.locator('[data-target="han"][data-action="increase"]');
     const decreaseHan = page.locator('[data-target="han"][data-action="decrease"]');
     await setFuValue(page, 110);
     await increaseHan.click();
     await expect(page.locator('#fuInput')).toHaveValue('110'); // 2翻では有効
     await increaseHan.click();
-    await expect(page.locator('#fuInput')).toHaveValue('60'); // 3翻の上限
+    await expect(page.locator('#fuInput')).toHaveValue('110'); // 3翻でも満貫の符数を保持
     await increaseHan.click();
-    await expect(page.locator('#fuInput')).toHaveValue('30'); // 4翻の上限
+    await expect(page.locator('#fuInput')).toHaveValue('110'); // 4翻でも満貫の符数を保持
     await page.locator('[data-target="fu"][data-action="increase"]').click();
-    await expect(page.locator('#fuInput')).toHaveValue('30');
+    await expect(page.locator('#fuInput')).toHaveValue('110');
     await decreaseHan.click();
     await decreaseHan.click();
+    await setFuValue(page, 30);
     await page.locator('[data-target="fu"][data-action="decrease"]').click();
     await expect(page.locator('#fuInput')).toHaveValue('20'); // 2翻では有効
     await decreaseHan.click();
@@ -81,16 +82,16 @@ test.describe('符数検証の回帰テスト', () => {
     await expect(page.locator('#fuInput')).toHaveValue('20');
   });
 
-  test('役選択で合計翻数に合わせて符数を補正する', async ({ page }) => {
+  test('役選択で合計翻数が増えても満貫の符数を保持する', async ({ page }) => {
     await setFuValue(page, 110);
     await page.locator('label:has(input[name="inputMode"][value="yaku"])').click();
     await expect(page.locator('#fuYakuInput')).toHaveValue('110');
     await page.locator('label.yaku-checkbox:has(input[value="混一色"])').click();
     await expect(page.locator('#totalHan')).toHaveText('3翻');
-    await expect(page.locator('#fuYakuInput')).toHaveValue('60');
+    await expect(page.locator('#fuYakuInput')).toHaveValue('110');
     await page.locator('label.yaku-checkbox:has(input[value="立直"])').click();
     await expect(page.locator('#totalHan')).toHaveText('4翻');
-    await expect(page.locator('#fuYakuInput')).toHaveValue('30');
+    await expect(page.locator('#fuYakuInput')).toHaveValue('110');
     await expectFuButtons(page, 'fuYaku', false);
   });
 
