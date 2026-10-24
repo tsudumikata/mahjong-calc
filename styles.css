@@ -657,3 +657,24 @@ body {
         grid-column: span 2;
     }
 }
+.yaku-validation-note {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: #555;
+    margin-bottom: 1rem;
+}
+
+.yaku-validation-message {
+    border: 1px solid #b34532;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    color: #8a281b;
+    background: #fff3ee;
+    line-height: 1.5;
+}
+
+.yaku-validation-message ul {
+    margin: 0;
+    padding-left: 1.25rem;
+}

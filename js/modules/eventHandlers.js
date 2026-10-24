@@ -5,6 +5,9 @@ import { calculateTotalHan, validateAndAdjustFu } from './validator.js';
 import { calculateScoreResult } from './calculator.js';
 import { displayResult } from './display.js';
 import { validFuByHan } from '../data/constants.js';
+import { validateYakuSelection } from './yakuValidation.js';
+import { synchronizeYakuState } from './stateSubscriptions.js';
+import { clearYakuFeedback, hideCalculationResult, showYakuIssues } from './yakuSelectionView.js';
 
 export class EventHandlers {
     constructor(stateManager, yakuData, domElements) {
@@ -18,6 +21,7 @@ export class EventHandlers {
      * Phase3b-1: script.jsから分離された複雑なイベント処理関数
      */
     handleNumberInput(event) {
+        hideCalculationResult(this.elements);
         const action = event.target.dataset.action;
         const target = event.target.dataset.target;
         const input = document.getElementById(target + 'Input');
@@ -37,6 +41,8 @@ export class EventHandlers {
             this.adjustFuForHanChange(newValue);
             
         } else if (target === 'fu' || target === 'fuYaku') {
+            const state = this.stateManager.getState();
+            if (target === 'fuYaku' && !validateYakuSelection(state.selectedYaku, state).valid) return;
             // 特殊役選択時は符数変更を無効化
             if (target === 'fuYaku' && this.hasSpecialYaku()) {
                 return; // 特殊役が選択されている場合は符数変更を無効
@@ -76,6 +82,9 @@ export class EventHandlers {
             
             input.value = newValue;
         }
+        // 表示値と状態を揃え、計算前の再検証で直前の符数操作を失わない。
+        if (target === 'han') this.stateManager.setHan(newValue);
+        else this.stateManager.setFu(newValue);
     }
 
     /**
@@ -188,8 +197,19 @@ export class EventHandlers {
         const yakuName = event.target.value;
         const isChecked = event.target.checked;
         
-        // StateManager経由で役の追加・削除
+        hideCalculationResult(this.elements);
+        clearYakuFeedback();
+        // 追加だけを拒否する。既存の選択は黙って削除せず、解除は常に許可する。
         if (isChecked) {
+            const state = this.stateManager.getState();
+            const candidate = new Set(state.selectedYaku);
+            candidate.add(yakuName);
+            const validation = validateYakuSelection(candidate, state);
+            if (!validation.valid) {
+                event.target.checked = state.selectedYaku.has(yakuName);
+                showYakuIssues(validation.issues, 'yakuValidationFeedback');
+                return;
+            }
             this.stateManager.addYaku(yakuName);
         } else {
             this.stateManager.removeYaku(yakuName);
@@ -332,6 +352,8 @@ export class EventHandlers {
      * Issue #5: StateManagerとHTML要素の同期を確実に行う
      */
     resetFormElements() {
+        clearYakuFeedback();
+        showYakuIssues([]);
         // 入力モードを「手動入力」に戻す
         const manualModeRadio = document.querySelector('input[name="inputMode"][value="manual"]');
         if (manualModeRadio) manualModeRadio.checked = true;
@@ -388,6 +410,12 @@ export class EventHandlers {
      * Phase3b-3: script.jsから分離された計算処理
      */
     calculateScore() {
+        hideCalculationResult(this.elements);
+        // disabled や購読済み状態を信用せず、直接・一括設定された役も必ず再検証する。
+        if (this.stateManager.getState().inputMode === 'yaku') {
+            const validation = synchronizeYakuState(this.stateManager, this.elements, this.yakuData);
+            if (!validation.valid) return;
+        }
         // StateManager経由で全状態を取得
         const currentState = this.stateManager.getState();
         let han, fu;

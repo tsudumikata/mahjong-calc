@@ -97,6 +97,8 @@ test.describe('役選択の固定符数の回帰テスト', () => {
     await expect(page.locator('#fuInput')).toHaveValue('25');
     await selectMode(page, 'yaku');
     await expectFu(page, 25, true);
+    // 河底撈魚はロン限定。固定符数の切り替え確認は矛盾のない選択で行う。
+    await selectYaku(page, '河底撈魚');
     await page.locator('label:has(input[name="winType"][value="tsumo"])').click();
     await expectFu(page, 25, true);
     await page.locator('label:has(input[name="winType"][value="ron"])').click();
@@ -135,11 +137,12 @@ test.describe('役選択の固定符数の回帰テスト', () => {
     await selectMode(page, 'yaku');
     await selectYaku(page, '平和');
     await expectFu(page, 30, true);
-    await selectYaku(page, '門前清自摸和');
     await page.locator('label:has(input[name="winType"][value="tsumo"])').click();
+    await selectYaku(page, '門前清自摸和');
     await expectFu(page, 20, true);
     await page.locator('#calculateBtn').click();
     await expect(page.locator('#mainResult .result-score')).toHaveText('700');
+    await selectYaku(page, '門前清自摸和');
     await page.locator('label:has(input[name="winType"][value="ron"])').click();
     await expectFu(page, 30, true);
     await selectYaku(page, '平和');

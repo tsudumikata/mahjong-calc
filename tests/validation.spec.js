@@ -105,12 +105,15 @@ test.describe('符数検証の回帰テスト', () => {
     await selectYaku('立直');
     await expect(page.locator('#totalHan')).toHaveText('6翻');
     await expectFuButtons(page, 'fuYaku', true);
+    // 国士無双と順子役・混一色は両立しないので、一度解除して役満を確認する。
+    await selectYaku('立直');
+    await selectYaku('一気通貫');
+    await selectYaku('混一色');
     await selectYaku('国士無双');
     await expect(page.locator('#totalHan')).toHaveText('役満');
     await expectFuButtons(page, 'fuYaku', true);
     await selectYaku('国士無双');
-    await selectYaku('立直');
-    await selectYaku('一気通貫');
+    await selectYaku('混一色');
     await expect(page.locator('#totalHan')).toHaveText('3翻');
     await expectFuButtons(page, 'fuYaku', false);
     await page.locator('[data-target="fuYaku"][data-action="increase"]').click();

@@ -93,6 +93,9 @@
                     <div class="yaku-input-section" style="display: none;">
                         <div class="yaku-selection">
                             <h2>役選択</h2>
+                            <p class="yaku-validation-note">選択した役と和了条件の矛盾を確認します。手牌・門前／副露・巡目や槓の履歴は判定できないため、各役の成立条件は別途確認してください。</p>
+                            <div id="yakuValidationFeedback" class="yaku-validation-message" role="status" aria-live="polite" hidden></div>
+                            <div id="yakuValidationErrors" class="yaku-validation-message" role="alert" hidden></div>
                             <div class="yaku-categories">
                                 <div class="yaku-category">
                                     <h3>1翻役</h3>
@@ -132,6 +135,7 @@
                             <div class="total-han-display">
                                 <h3>合計翻数</h3>
                                 <div class="total-han" id="totalHan">0翻</div>
+                                <p id="yakumanScoringNote" class="yaku-validation-note" hidden>現行仕様では複数の役満も1役満として計算し、一般役の翻数は加算しません。</p>
                             </div>
                         </div>
 

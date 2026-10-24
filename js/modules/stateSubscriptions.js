@@ -3,66 +3,44 @@
 import { calculateTotalHan, hasSpecialYaku, getRequiredFuForSpecialYaku, validateAndAdjustFu, getPinfuFu } from './validator.js';
 import { updateSelectedYakuDisplay } from './display.js';
 import { specialYakuFuRules, validFuByHan } from '../data/constants.js';
+import { validateYakuSelection } from './yakuValidation.js';
+import { clearYakuFeedback, hideCalculationResult, renderYakuValidation } from './yakuSelectionView.js';
 
 // メイン購読設定関数
 export function setupStateSubscriptions(stateManager, domElements, yakuData) {
     const subscriptions = [];
 
-    // 役選択状態の変更を購読
-    subscriptions.push(
-        stateManager.subscribe('selectedYaku', (newYaku) => {
-            // 選択された役の表示更新
-            updateSelectedYakuDisplay(newYaku, yakuData, domElements.selectedYakuList);
-
-            // 合計翻数の再計算
-            const totalHan = calculateTotalHan(newYaku, yakuData);
-            stateManager.setTotalHan(totalHan);
-
-            // 合計翻数が変わらない役の入れ替えでも符数ルールを適用
-            updateFuForYakuSelection(stateManager.getState(), stateManager);
-        })
-    );
-
-    // 合計翻数の変更を購読
-    subscriptions.push(
-        stateManager.subscribe('totalHan', (newHan) => {
-            // 翻数表示の更新
-            updateTotalHanDisplay(newHan, domElements.totalHan);
-        })
-    );
-
-    // 入力モードの変更を購読
-    subscriptions.push(
-        stateManager.subscribe('inputMode', (newMode) => {
-            // 入力セクションの表示切り替え
-            toggleInputSections(newMode, domElements);
-            
-            // 符数入力の同期
-            synchronizeFuInputs(newMode, domElements, stateManager);
-            
-            // モード変更時の特殊処理
-            updateFuForYakuSelection(stateManager.getState(), stateManager);
-        })
-    );
-
-    // 和了タイプの変更を購読
-    subscriptions.push(
-        stateManager.subscribe('winType', (newWinType) => {
-            const currentState = stateManager.getState();
-            if (currentState.inputMode === 'yaku') {
-                updateFuForWinTypeChange(newWinType, currentState, stateManager, domElements);
+    // 条件・前提役の解除や一括更新も同じ検証経路へ通す。
+    for (const key of ['selectedYaku', 'inputMode', 'winType', 'playerType']) {
+        subscriptions.push(stateManager.subscribe(key, () => {
+            hideCalculationResult(domElements);
+            clearYakuFeedback();
+            const state = stateManager.getState();
+            if (key === 'inputMode') {
+                toggleInputSections(state.inputMode, domElements);
+                synchronizeFuInputs(state.inputMode, domElements, stateManager);
             }
-        })
-    );
+            synchronizeYakuState(stateManager, domElements, yakuData);
+        }));
+    }
+
+    subscriptions.push(stateManager.subscribe('totalHan', () => {
+        const state = stateManager.getState();
+        renderYakuValidation(state, validateYakuSelection(state.selectedYaku, state), domElements);
+    }));
 
     // 符数の変更を購読
     subscriptions.push(
-        stateManager.subscribe('currentFu', (newFu) => {
+        stateManager.subscribe('currentFu', () => {
+            hideCalculationResult(domElements);
             const currentState = stateManager.getState();
             // 符数表示の同期
-            synchronizeFuDisplays(newFu, currentState.inputMode, domElements);
+            // 一括更新の通知途中に固定符数へ補正されることがあるため、最新値を使う。
+            synchronizeFuDisplays(currentState.currentFu, currentState.inputMode, domElements);
+            renderYakuValidation(currentState, validateYakuSelection(currentState.selectedYaku, currentState), domElements);
         })
     );
+    subscriptions.push(stateManager.subscribe('currentHan', () => hideCalculationResult(domElements)));
 
     // 詳細表示状態の変更を購読
     subscriptions.push(
@@ -71,15 +49,22 @@ export function setupStateSubscriptions(stateManager, domElements, yakuData) {
         })
     );
 
+    synchronizeYakuState(stateManager, domElements, yakuData);
     return subscriptions;
 }
 
-// 合計翻数表示の更新
-function updateTotalHanDisplay(totalHan, totalHanElement) {
-    if (totalHanElement) {
-        const display = totalHan >= 13 ? '役満' : `${totalHan}翻`;
-        totalHanElement.textContent = display;
+// UI更新と計算直前の両方から使う。無効な選択の翻・符を有効値として表示しない。
+export function synchronizeYakuState(stateManager, domElements, yakuData) {
+    const state = stateManager.getState();
+    const validation = validateYakuSelection(state.selectedYaku, state);
+    updateSelectedYakuDisplay(state.selectedYaku, yakuData, domElements.selectedYakuList);
+    stateManager.setTotalHan(validation.valid ? calculateTotalHan(state.selectedYaku, yakuData) : 0);
+    if (validation.valid) {
+        updateFuForYakuSelection(stateManager.getState(), stateManager);
+        synchronizeFuDisplays(stateManager.getState().currentFu, state.inputMode, domElements);
     }
+    renderYakuValidation(stateManager.getState(), validation, domElements);
+    return validation;
 }
 
 // 入力セクションの表示切り替え
@@ -105,8 +90,9 @@ function synchronizeFuInputs(inputMode, domElements, stateManager) {
     if (fuInput && fuYakuInput) {
         if (inputMode === 'manual') {
             // 役選択モードから手動入力モードに切り替える時、符数を同期
-            fuInput.value = fuYakuInput.value;
-            stateManager.setFu(parseInt(fuYakuInput.value));
+            const fu = parseInt(fuYakuInput.value) || currentState.currentFu;
+            fuInput.value = fu;
+            stateManager.setFu(fu);
         } else if (inputMode === 'yaku') {
             // 手動入力モードから役選択モードに切り替える時、符数を同期
             fuYakuInput.value = fuInput.value;
@@ -186,15 +172,6 @@ function updateFuForYakuSelection(currentState, stateManager) {
     
     // 3. 通常の符数制限を適用
     adjustFuForYakuSelection(currentState.totalHan, currentState, stateManager);
-}
-
-// 和了タイプ変更時の符数更新
-function updateFuForWinTypeChange(winType, currentState, stateManager, domElements) {
-    // 平和が選択されている場合のみ符数を調整
-    if (hasSpecialYaku(currentState.selectedYaku, { '平和': true })) {
-        const pinfuFu = getPinfuFu(winType);
-        stateManager.setFu(pinfuFu);
-    }
 }
 
 // 詳細表示の切り替え
