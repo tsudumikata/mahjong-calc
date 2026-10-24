@@ -16,7 +16,7 @@ const TEST_YAKU = {
   TANYAO: '断幺九',         // "断ヤオ九"ではなく"断幺九" 
   IPPEIKO: '一盃口',
   MENZEN_TSUMO: '門前清自摸和',
-  YAKUHAI: '役牌',          // "ドラ"の代替として実在する役を使用
+  IPPATSU: '一発',
   PINFU: '平和'             // 追加のテスト用役
 };
 
@@ -197,20 +197,23 @@ test.describe('リセット機能テスト', () => {
     
     // 役選択セクションの表示を待機
     await expect(page.locator('.yaku-input-section')).toBeVisible();
+    await page.locator('label:has(input[name="winType"][value="tsumo"])').click();
     
     // 高翻数の役を選択（推奨セレクタでアクセス）
     const menzenchintsumoCheckbox = page.locator(`label.yaku-checkbox:has(input[value="${TEST_YAKU.MENZEN_TSUMO}"])`);
     const riichiCheckbox = page.locator(`label.yaku-checkbox:has(input[value="${TEST_YAKU.RIICHI}"])`);
     const tanyaoCheckbox = page.locator(`label.yaku-checkbox:has(input[value="${TEST_YAKU.TANYAO}"])`);
     const ippeikoCheckbox = page.locator(`label.yaku-checkbox:has(input[value="${TEST_YAKU.IPPEIKO}"])`);
-    const yakuhaiCheckbox = page.locator(`label.yaku-checkbox:has(input[value="${TEST_YAKU.YAKUHAI}"])`);
+    const ippatsuCheckbox = page.locator(`label.yaku-checkbox:has(input[value="${TEST_YAKU.IPPATSU}"])`);
     
     // 複数の役を選択して高翻数にする（ラベルクリック）
     await riichiCheckbox.click();
     await menzenchintsumoCheckbox.click();
     await tanyaoCheckbox.click();
     await ippeikoCheckbox.click();
-    await yakuhaiCheckbox.click();
+    await ippatsuCheckbox.click();
+    await expect(page.locator('#totalHan')).toHaveText('5翻');
+    await expect(page.locator('[data-action="increase"][data-target="fuYaku"]')).toBeDisabled();
     
     // リセットボタンをクリック
     await page.locator('#resetBtn').click();
