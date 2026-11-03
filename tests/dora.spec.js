@@ -139,3 +139,85 @@ test.describe('ドラ・赤ドラ・裏ドラ（Issue #7）', () => {
     await expect(page.locator('#totalHan')).toHaveText('1翻');
   });
 });
+
+test.describe('混老頭と赤ドラの整合性（Issue #39）', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.locator('label:has(input[name="playerType"][value="child"])').click();
+    await selectMode(page, 'yaku');
+    await selectYaku(page, '七対子');
+  });
+
+  for (const recovery of ['赤ドラを0枚に戻す', '混老頭を解除する']) {
+    test(`混老頭選択後の赤ドラを拒否し、${recovery}と再計算できる`, async ({ page }) => {
+      await selectYaku(page, '混老頭');
+      await expect(page.locator('#totalHan')).toHaveText('4翻');
+      await expect(page.locator('#fuYakuInput')).toHaveValue('25');
+      await page.locator('#calculateBtn').click();
+      await expect(page.locator('#mainResult .result-score')).toHaveText('6,400点');
+      await page.locator('#toggleDetailBtn').click();
+      await expect(page.locator('#detailResult')).toBeVisible();
+
+      await addDora(page, 'redDora', 1);
+      await expect(page.locator('#yakuValidationErrors')).toContainText('混老頭');
+      await expect(page.locator('#yakuValidationErrors')).toContainText('赤ドラ');
+      await expect(page.locator('#totalHan')).toHaveText('選択を確認');
+      await expect(page.locator('#fuYakuInput')).toHaveValue('');
+      await expect(page.locator('#hanBreakdown')).toBeHidden();
+      await expect(page.locator('#resultSection')).toBeHidden();
+      await expect(page.locator('#mainResult')).toBeEmpty();
+      await expect(page.locator('#detailResult')).toBeEmpty();
+      await page.locator('#calculateBtn').click();
+      await expect(page.locator('#resultSection')).toBeHidden();
+
+      if (recovery === '赤ドラを0枚に戻す') {
+        await doraButton(page, 'redDora', 'decrease').click();
+      } else {
+        await selectYaku(page, '混老頭');
+      }
+      await expect(page.locator('#yakuValidationErrors')).toBeHidden();
+      await expect(page.locator('#fuYakuInput')).toHaveValue('25');
+      await page.locator('#calculateBtn').click();
+      await expect(page.locator('#resultSection')).toBeVisible();
+      await expect(page.locator('#mainResult .result-score')).toHaveText(
+        recovery === '赤ドラを0枚に戻す' ? '6,400点' : '3,200点'
+      );
+    });
+  }
+
+  test('赤ドラ入力後は混老頭をグレー表示し、追加拒否の理由を示す', async ({ page }) => {
+    await addDora(page, 'redDora', 1);
+    const honroutou = page.locator('label.yaku-checkbox:has(input[value="混老頭"])');
+    await expect(honroutou).toHaveClass(/yaku-unavailable/);
+    await honroutou.click();
+    await expect(honroutou.locator('input')).not.toBeChecked();
+    await expect(page.locator('#yakuValidationFeedback')).toContainText('混老頭');
+    await expect(page.locator('#yakuValidationFeedback')).toContainText('赤ドラ');
+    await expect(page.locator('#yakuValidationErrors')).toBeHidden();
+    await page.locator('#calculateBtn').click();
+    await expect(page.locator('#mainResult .result-score')).toHaveText('3,200点');
+
+    await doraButton(page, 'redDora', 'decrease').click();
+    await expect(honroutou).not.toHaveClass(/yaku-unavailable/);
+    await expect(page.locator('#yakuValidationFeedback')).toBeHidden();
+    await honroutou.click();
+    await expect(honroutou.locator('input')).toBeChecked();
+    await page.locator('#calculateBtn').click();
+    await expect(page.locator('#mainResult .result-score')).toHaveText('6,400点');
+  });
+
+  test('混老頭でも通常ドラと立直時の裏ドラは計算できる', async ({ page }) => {
+    await selectYaku(page, '混老頭');
+    await addDora(page, 'dora', 1);
+    await expect(page.locator('#yakuValidationErrors')).toBeHidden();
+    await page.locator('#calculateBtn').click();
+    await expect(page.locator('#mainResult .result-score')).toHaveText('8,000点');
+
+    await selectYaku(page, '立直');
+    await addDora(page, 'uraDora', 1);
+    await expect(page.locator('#totalHan')).toHaveText('7翻');
+    await expect(page.locator('#yakuValidationErrors')).toBeHidden();
+    await page.locator('#calculateBtn').click();
+    await expect(page.locator('#mainResult .result-score')).toHaveText('12,000点');
+  });
+});
