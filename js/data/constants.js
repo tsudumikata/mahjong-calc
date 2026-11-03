@@ -22,6 +22,17 @@ export const specialYakuFuRules = {
     "七対子": 25
 };
 
+// ドラ入力の上限。赤ドラは各色の5に1枚ずつ入る一般的な3枚ルール。
+// ドラ・裏ドラは13翻（数え役満）を超える入力を想定しないため13枚までとする。
+export const DORA_LIMITS = Object.freeze({
+    doraCount: 13,
+    redDoraCount: 3,
+    uraDoraCount: 13
+});
+
+// 裏ドラは立直者のみが数える。
+export const RIICHI_YAKU = Object.freeze(['立直', 'ダブル立直']);
+
 // デフォルト設定値
 export const DEFAULT_SETTINGS = {
     inputMode: 'manual',

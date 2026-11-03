@@ -51,8 +51,9 @@ export function generateYakuList(yakuDataArray, containerElement) {
  * @param {Array} yakuDataArray - 役データ配列
  * @param {HTMLElement} mainResultElement - メイン結果表示要素
  * @param {HTMLElement} detailResultElement - 詳細結果表示要素
+ * @param {Object|null} doraInfo - 役選択モードのドラ内訳（calculateHanBreakdown の結果+各枚数）
  */
-export function displayResult(result, han, fu, winType, playerType, inputMode = 'manual', selectedYakuSet, yakuDataArray, mainResultElement, detailResultElement) {
+export function displayResult(result, han, fu, winType, playerType, inputMode = 'manual', selectedYakuSet, yakuDataArray, mainResultElement, detailResultElement, doraInfo = null) {
     const winTypeText = winType === 'ron' ? 'ロン' : 'ツモ';
     const playerTypeText = playerType === 'parent' ? '親' : '子';
     
@@ -78,6 +79,15 @@ export function displayResult(result, han, fu, winType, playerType, inputMode = 
                 appendDetailItem(detailResultElement, `・${yaku.name} (${yaku.hanText})`, 'yaku-detail');
             }
         });
+    }
+
+    if (inputMode === 'yaku' && doraInfo && doraInfo.doraHan > 0) {
+        const counts = [['ドラ', doraInfo.doraCount], ['赤ドラ', doraInfo.redDoraCount], ['裏ドラ', doraInfo.uraDoraCount]]
+            .filter(([, count]) => count > 0)
+            .map(([label, count]) => `${label}${count}`)
+            .join('・');
+        const note = doraInfo.isYakuman ? '（役満のため加算なし）' : '';
+        appendDetailItem(detailResultElement, `ドラ: ${doraInfo.appliedDoraHan}翻 (${counts})${note}`);
     }
     
 }

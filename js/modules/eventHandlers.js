@@ -1,10 +1,10 @@
 // イベント処理専門モジュール - Phase3b実装
 // StateManager統合済みのイベント処理を提供
 
-import { calculateTotalHan, validateAndAdjustFu } from './validator.js';
+import { calculateHanBreakdown, calculateTotalHanWithDora, validateAndAdjustFu } from './validator.js';
 import { calculateScoreResult } from './calculator.js';
 import { displayResult } from './display.js';
-import { validFuByHan } from '../data/constants.js';
+import { validFuByHan, DORA_LIMITS } from '../data/constants.js';
 import { validateYakuSelection } from './yakuValidation.js';
 import { synchronizeYakuState } from './stateSubscriptions.js';
 import { clearYakuFeedback, hideCalculationResult, showYakuIssues } from './yakuSelectionView.js';
@@ -24,6 +24,7 @@ export class EventHandlers {
         hideCalculationResult(this.elements);
         const action = event.target.dataset.action;
         const target = event.target.dataset.target;
+        if (this.handleDoraInput(target, action)) return;
         const input = document.getElementById(target + 'Input');
         
         let currentValue = parseInt(input.value);
@@ -56,7 +57,7 @@ export class EventHandlers {
             } else {
                 // 役選択モードの場合（StateManager経由）
                 const currentState = this.stateManager.getState();
-                currentHan = calculateTotalHan(currentState.selectedYaku, this.yakuData);
+                currentHan = calculateTotalHanWithDora(currentState.selectedYaku, this.yakuData, currentState);
             }
             const validFuList = validFuByHan[currentHan] || [];
             
@@ -85,6 +86,27 @@ export class EventHandlers {
         // 表示値と状態を揃え、計算前の再検証で直前の符数操作を失わない。
         if (target === 'han') this.stateManager.setHan(newValue);
         else this.stateManager.setFu(newValue);
+    }
+
+    /**
+     * ドラ・赤ドラ・裏ドラの増減
+     * 表示・ボタン状態・合計翻数は stateSubscriptions.js の購読者が更新する。
+     * @returns {boolean} ドラ入力として処理した場合 true
+     */
+    handleDoraInput(target, action) {
+        const kind = `${target}Count`;
+        if (!Object.hasOwn(DORA_LIMITS, kind)) return false;
+        const state = this.stateManager.getState();
+        const current = state[kind] ?? 0;
+        if (action === 'increase') {
+            // 裏ドラは立直時のみ。減らす操作は常に許可して矛盾を解消できるようにする。
+            const hasRiichi = state.selectedYaku.has('立直') || state.selectedYaku.has('ダブル立直');
+            if (current >= DORA_LIMITS[kind] || (kind === 'uraDoraCount' && !hasRiichi)) return true;
+            this.stateManager.setDoraCount(kind, current + 1);
+        } else if (action === 'decrease' && current > 0) {
+            this.stateManager.setDoraCount(kind, current - 1);
+        }
+        return true;
     }
 
     /**
@@ -373,6 +395,12 @@ export class EventHandlers {
         if (this.elements.fuInput) this.elements.fuInput.value = '30';
         if (this.elements.fuYakuInput) this.elements.fuYakuInput.value = '30';
         
+        // ドラ枚数を0に戻す
+        for (const kind of Object.keys(DORA_LIMITS)) {
+            const input = document.getElementById(`${kind.replace(/Count$/, '')}Input`);
+            if (input) input.value = '0';
+        }
+
         // 役選択をすべてクリア
         const yakuCheckboxes = document.querySelectorAll('.yaku-input-section input[type="checkbox"]');
         yakuCheckboxes.forEach(checkbox => {
@@ -419,14 +447,22 @@ export class EventHandlers {
         // StateManager経由で全状態を取得
         const currentState = this.stateManager.getState();
         let han, fu;
+        let doraInfo = null;
         
         if (currentState.inputMode === 'manual') {
             han = parseInt(this.elements.hanInput.value);
             fu = parseInt(this.elements.fuInput.value);
         } else {
             // 役選択モードの場合、選択された役から翻数を計算
-            han = calculateTotalHan(currentState.selectedYaku, this.yakuData);
+            const breakdown = calculateHanBreakdown(currentState.selectedYaku, this.yakuData, currentState);
+            han = breakdown.totalHan;
             fu = parseInt(this.elements.fuYakuInput.value);
+            doraInfo = {
+                ...breakdown,
+                doraCount: currentState.doraCount,
+                redDoraCount: currentState.redDoraCount,
+                uraDoraCount: currentState.uraDoraCount
+            };
             
             if (han === 0) {
                 alert('役が選択されていません。');
@@ -444,7 +480,8 @@ export class EventHandlers {
             displayResult(
                 result, han, fu, winType, playerType, 
                 currentState.inputMode, currentState.selectedYaku, 
-                this.yakuData, this.elements.mainResult, this.elements.detailResult
+                this.yakuData, this.elements.mainResult, this.elements.detailResult,
+                doraInfo
             );
             this.elements.resultSection.style.display = 'block';
             this.elements.resultSection.scrollIntoView({ behavior: 'smooth' });

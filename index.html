@@ -72,7 +72,7 @@
 
                     <div class="manual-input-section">
                         <div class="han-section">
-                            <h2>翻数</h2>
+                            <h2>翻数<span class="heading-note">（ドラ込み）</span></h2>
                             <div class="number-input-group">
                                 <button class="number-btn" data-action="decrease" data-target="han">-</button>
                                 <input type="number" id="hanInput" value="1" min="1" max="13" readonly>
@@ -125,6 +125,37 @@
                             </div>
                         </div>
                         
+                        <div class="dora-section">
+                            <h2>ドラ</h2>
+                            <p class="yaku-validation-note">ドラは役ではないため、役が1つ以上あるときだけ翻数に加算します。役満には加算しません。裏ドラは立直・ダブル立直のときだけ入力できます。</p>
+                            <div class="dora-inputs">
+                                <div class="dora-item">
+                                    <h3 id="doraLabel">ドラ</h3>
+                                    <div class="number-input-group" role="group" aria-labelledby="doraLabel">
+                                        <button class="number-btn" data-action="decrease" data-target="dora" aria-label="ドラを減らす">-</button>
+                                        <input type="number" id="doraInput" value="0" min="0" max="13" readonly aria-labelledby="doraLabel">
+                                        <button class="number-btn" data-action="increase" data-target="dora" aria-label="ドラを増やす">+</button>
+                                    </div>
+                                </div>
+                                <div class="dora-item">
+                                    <h3 id="redDoraLabel">赤ドラ</h3>
+                                    <div class="number-input-group" role="group" aria-labelledby="redDoraLabel">
+                                        <button class="number-btn" data-action="decrease" data-target="redDora" aria-label="赤ドラを減らす">-</button>
+                                        <input type="number" id="redDoraInput" value="0" min="0" max="3" readonly aria-labelledby="redDoraLabel">
+                                        <button class="number-btn" data-action="increase" data-target="redDora" aria-label="赤ドラを増やす">+</button>
+                                    </div>
+                                </div>
+                                <div class="dora-item">
+                                    <h3 id="uraDoraLabel">裏ドラ</h3>
+                                    <div class="number-input-group" role="group" aria-labelledby="uraDoraLabel">
+                                        <button class="number-btn" data-action="decrease" data-target="uraDora" aria-label="裏ドラを減らす">-</button>
+                                        <input type="number" id="uraDoraInput" value="0" min="0" max="13" readonly aria-labelledby="uraDoraLabel">
+                                        <button class="number-btn" data-action="increase" data-target="uraDora" aria-label="裏ドラを増やす">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="yaku-summary">
                             <div class="selected-yaku-display">
                                 <h3>選択された役</h3>
@@ -135,6 +166,7 @@
                             <div class="total-han-display">
                                 <h3>合計翻数</h3>
                                 <div class="total-han" id="totalHan">0翻</div>
+                                <p id="hanBreakdown" class="han-breakdown" hidden></p>
                                 <p id="yakumanScoringNote" class="yaku-validation-note" hidden>現行仕様では複数の役満も1役満として計算し、一般役の翻数は加算しません。</p>
                             </div>
                         </div>
