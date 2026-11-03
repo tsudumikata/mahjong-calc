@@ -1,6 +1,6 @@
 // StateSubscriptions - StateManagerのリアクティブ購読設定
 
-import { calculateTotalHan, hasSpecialYaku, getRequiredFuForSpecialYaku, validateAndAdjustFu, getPinfuFu } from './validator.js';
+import { calculateTotalHanWithDora, hasSpecialYaku, getRequiredFuForSpecialYaku, validateAndAdjustFu, getPinfuFu } from './validator.js';
 import { updateSelectedYakuDisplay } from './display.js';
 import { specialYakuFuRules, validFuByHan } from '../data/constants.js';
 import { validateYakuSelection } from './yakuValidation.js';
@@ -11,7 +11,7 @@ export function setupStateSubscriptions(stateManager, domElements, yakuData) {
     const subscriptions = [];
 
     // 条件・前提役の解除や一括更新も同じ検証経路へ通す。
-    for (const key of ['selectedYaku', 'inputMode', 'winType', 'playerType']) {
+    for (const key of ['selectedYaku', 'inputMode', 'winType', 'playerType', 'doraCount', 'redDoraCount', 'uraDoraCount']) {
         subscriptions.push(stateManager.subscribe(key, () => {
             hideCalculationResult(domElements);
             clearYakuFeedback();
@@ -58,7 +58,7 @@ export function synchronizeYakuState(stateManager, domElements, yakuData) {
     const state = stateManager.getState();
     const validation = validateYakuSelection(state.selectedYaku, state);
     updateSelectedYakuDisplay(state.selectedYaku, yakuData, domElements.selectedYakuList);
-    stateManager.setTotalHan(validation.valid ? calculateTotalHan(state.selectedYaku, yakuData) : 0);
+    stateManager.setTotalHan(validation.valid ? calculateTotalHanWithDora(state.selectedYaku, yakuData, state) : 0);
     if (validation.valid) {
         updateFuForYakuSelection(stateManager.getState(), stateManager);
         synchronizeFuDisplays(stateManager.getState().currentFu, state.inputMode, domElements);

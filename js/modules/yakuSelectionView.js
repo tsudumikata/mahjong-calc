@@ -1,4 +1,8 @@
 // 役検証の表示。ルール自体は yakuValidation.js だけで定義する。
+import { yakuData } from '../data/yakuData.js';
+import { DORA_LIMITS, RIICHI_YAKU } from '../data/constants.js';
+import { calculateHanBreakdown } from './validator.js';
+
 const issueLabels = {
     structure: '成立条件の矛盾',
     duplicate: '重複計上',
@@ -44,8 +48,12 @@ export function renderYakuValidation(state, validation, elements) {
             ? (state.totalHan >= 13 ? '役満' : `${state.totalHan}翻`)
             : '選択を確認';
     }
+    const breakdown = calculateHanBreakdown(state.selectedYaku, yakuData, state);
     const yakumanNote = document.getElementById('yakumanScoringNote');
-    if (yakumanNote) yakumanNote.hidden = invalid || state.totalHan < 13;
+    // 数え役満（通常役+ドラ）では一般役を加算するため、役満選択時だけ表示する。
+    if (yakumanNote) yakumanNote.hidden = invalid || !breakdown.isYakuman;
+    renderHanBreakdown(breakdown, validation.valid);
+    renderDoraInputs(state);
     const invalidNames = new Set(validation.issues.flatMap(issue => issue.yaku));
     document.querySelectorAll('.yaku-checkbox input').forEach(checkbox => {
         checkbox.checked = state.selectedYaku.has(checkbox.value);
@@ -66,5 +74,39 @@ export function renderYakuValidation(state, validation, elements) {
             button.disabled = true;
             button.classList.add('disabled');
         });
+    }
+}
+
+// 役とドラの内訳。ドラが0枚なら表示しない。
+function renderHanBreakdown({ yakuHan, doraHan, appliedDoraHan, isYakuman }, valid) {
+    const element = document.getElementById('hanBreakdown');
+    if (!element) return;
+    let text = '';
+    if (valid && doraHan > 0) {
+        if (yakuHan === 0) text = `ドラ${doraHan}翻は役がないため加算しません。`;
+        else if (isYakuman) text = `役満のためドラ${doraHan}翻は加算しません。`;
+        else text = `役 ${yakuHan}翻 + ドラ ${appliedDoraHan}翻`;
+    }
+    element.textContent = text;
+    element.hidden = text === '';
+}
+
+// 一括更新・リセット後もドラの表示と状態を揃える。裏ドラは立直時のみ増やせる。
+function renderDoraInputs(state) {
+    const hasRiichi = RIICHI_YAKU.some(name => state.selectedYaku.has(name));
+    for (const kind of Object.keys(DORA_LIMITS)) {
+        const target = kind.replace(/Count$/, '');
+        const input = document.getElementById(`${target}Input`);
+        const count = state[kind] ?? 0;
+        if (input) input.value = String(count);
+        for (const action of ['increase', 'decrease']) {
+            const button = document.querySelector(`[data-target="${target}"][data-action="${action}"]`);
+            if (!button) continue;
+            const disabled = action === 'increase'
+                ? count >= DORA_LIMITS[kind] || (kind === 'uraDoraCount' && !hasRiichi)
+                : count <= 0;
+            button.disabled = disabled;
+            button.classList.toggle('disabled', disabled);
+        }
     }
 }

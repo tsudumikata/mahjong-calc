@@ -1,5 +1,7 @@
 // StateManager - リアクティブ状態管理システム
 
+import { DORA_LIMITS } from '../data/constants.js';
+
 export class StateManager {
     constructor(initialState = {}) {
         this.state = { ...initialState };
@@ -141,6 +143,19 @@ export class StateManager {
         }
     }
 
+    // ドラ枚数管理（kind: 'doraCount' | 'redDoraCount' | 'uraDoraCount'）
+    setDoraCount(kind, count) {
+        const max = DORA_LIMITS[kind];
+        const value = Number(count);
+        if (max === undefined) {
+            console.warn(`StateManager: Invalid dora kind "${kind}"`);
+        } else if (Number.isInteger(value) && value >= 0 && value <= max) {
+            this.updateState({ [kind]: value });
+        } else {
+            console.warn(`StateManager: Invalid ${kind} value "${count}"`);
+        }
+    }
+
     // UI状態管理
     setDetailVisible(isVisible) {
         this.updateState({ isDetailVisible: Boolean(isVisible) });
@@ -159,7 +174,10 @@ export class StateManager {
     resetYakuSelection() {
         this.updateState({ 
             selectedYaku: new Set(),
-            totalHan: 0 
+            totalHan: 0,
+            doraCount: 0,
+            redDoraCount: 0,
+            uraDoraCount: 0
         });
     }
 
@@ -196,6 +214,11 @@ export function createDefaultState() {
         currentFu: 20,
         currentHan: 1,
         totalHan: 0,
+
+        // ドラ（役選択モードで役の翻数に加算）
+        doraCount: 0,
+        redDoraCount: 0,
+        uraDoraCount: 0,
         
         // UI状態
         isDetailVisible: false

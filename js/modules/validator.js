@@ -27,6 +27,57 @@ export function calculateTotalHan(selectedYakuSet, yakuDataArray) {
 }
 
 /**
+ * 役満が選択されているか
+ * @param {Set} selectedYakuSet - 選択された役のSet
+ * @param {Array} yakuDataArray - 役データ配列
+ * @returns {boolean}
+ */
+export function hasYakumanYaku(selectedYakuSet, yakuDataArray) {
+    return Array.from(selectedYakuSet).some(yakuName => {
+        const yaku = yakuDataArray.find(y => y.name === yakuName);
+        return Boolean(yaku && yaku.han >= 13);
+    });
+}
+
+/**
+ * ドラ・赤ドラ・裏ドラの合計翻数
+ * @param {Object} doraState - { doraCount, redDoraCount, uraDoraCount }
+ * @returns {number}
+ */
+export function calculateDoraHan({ doraCount = 0, redDoraCount = 0, uraDoraCount = 0 } = {}) {
+    return doraCount + redDoraCount + uraDoraCount;
+}
+
+/**
+ * 役とドラを合わせた翻数の内訳を返す
+ * - ドラは役ではないため、役がない場合は0翻（和了不可）
+ * - 役満にはドラを加算しない
+ * - 通常役+ドラが13翻以上なら数え役満として getScoreFromTable が扱う
+ * @param {Set} selectedYakuSet - 選択された役のSet
+ * @param {Array} yakuDataArray - 役データ配列
+ * @param {Object} doraState - { doraCount, redDoraCount, uraDoraCount }
+ * @returns {{ yakuHan: number, doraHan: number, appliedDoraHan: number, totalHan: number, isYakuman: boolean }}
+ */
+export function calculateHanBreakdown(selectedYakuSet, yakuDataArray, doraState = {}) {
+    const yakuHan = calculateTotalHan(selectedYakuSet, yakuDataArray);
+    const doraHan = calculateDoraHan(doraState);
+    const isYakuman = hasYakumanYaku(selectedYakuSet, yakuDataArray);
+    const appliedDoraHan = (yakuHan === 0 || isYakuman) ? 0 : doraHan;
+    return { yakuHan, doraHan, appliedDoraHan, totalHan: yakuHan + appliedDoraHan, isYakuman };
+}
+
+/**
+ * 役とドラを合わせた合計翻数
+ * @param {Set} selectedYakuSet - 選択された役のSet
+ * @param {Array} yakuDataArray - 役データ配列
+ * @param {Object} doraState - { doraCount, redDoraCount, uraDoraCount }
+ * @returns {number}
+ */
+export function calculateTotalHanWithDora(selectedYakuSet, yakuDataArray, doraState = {}) {
+    return calculateHanBreakdown(selectedYakuSet, yakuDataArray, doraState).totalHan;
+}
+
+/**
  * 特殊役（固定符数）が選択されているかチェック
  * @param {Set} selectedYakuSet - 選択された役のSet
  * @param {Object} specialYakuFuRulesObj - 特殊役符数ルールオブジェクト
