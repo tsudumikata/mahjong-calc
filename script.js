@@ -10,25 +10,26 @@ import { generateScoreTable, generateYakuList, displayResult, toggleDetailDispla
 import { createStateManager } from './js/modules/stateManager.js';
 import { setupStateSubscriptions } from './js/modules/stateSubscriptions.js';
 import { createEventHandlers } from './js/modules/eventHandlers.js';
+import { safeGetElement, safeQuerySelector, safeRun, safeStateOperation, readIntValue } from './js/modules/errorHandler.js';
 
-// DOM要素
-const hanInput = document.getElementById('hanInput');
-const fuInput = document.getElementById('fuInput');
-const fuYakuInput = document.getElementById('fuYakuInput');
-const calculateBtn = document.getElementById('calculateBtn');
-const resetBtn = document.getElementById('resetBtn');
-const resultSection = document.getElementById('resultSection');
-const mainResult = document.getElementById('mainResult');
-const detailResult = document.getElementById('detailResult');
-const toggleDetailBtn = document.getElementById('toggleDetailBtn');
-const scoreTableBody = document.getElementById('scoreTableBody');
-const yakuListContainer = document.getElementById('yakuListContainer');
+// DOM要素（Issue #41: 欠けていても初期化全体は止めず、ログに残して null にする）
+const hanInput = safeGetElement('hanInput', 'init');
+const fuInput = safeGetElement('fuInput', 'init');
+const fuYakuInput = safeGetElement('fuYakuInput', 'init');
+const calculateBtn = safeGetElement('calculateBtn', 'init');
+const resetBtn = safeGetElement('resetBtn', 'init');
+const resultSection = safeGetElement('resultSection', 'init');
+const mainResult = safeGetElement('mainResult', 'init');
+const detailResult = safeGetElement('detailResult', 'init');
+const toggleDetailBtn = safeGetElement('toggleDetailBtn', 'init');
+const scoreTableBody = safeGetElement('scoreTableBody', 'init');
+const yakuListContainer = safeGetElement('yakuListContainer', 'init');
 
 // 役選択関連のDOM要素
-const manualInputSection = document.querySelector('.manual-input-section');
-const yakuInputSection = document.querySelector('.yaku-input-section');
-const selectedYakuList = document.getElementById('selectedYakuList');
-const totalHan = document.getElementById('totalHan');
+const manualInputSection = safeQuerySelector('.manual-input-section', 'init', { required: true });
+const yakuInputSection = safeQuerySelector('.yaku-input-section', 'init', { required: true });
+const selectedYakuList = safeGetElement('selectedYakuList', 'init');
+const totalHan = safeGetElement('totalHan', 'init');
 
 // 状態管理
 let stateManager;
@@ -41,8 +42,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
-    // StateManager初期化
-    stateManager = createStateManager();
+    // StateManager は全機能の前提。作れなければ以降の初期化はできない。
+    stateManager = safeRun(() => createStateManager(), 'initializeApp - createStateManager', null);
+    if (!stateManager) return;
     
     // DOM要素オブジェクト作成
     const domElements = {
@@ -64,27 +66,32 @@ function initializeApp() {
     // Phase3b: EventHandlers初期化
     eventHandlers = createEventHandlers(stateManager, yakuData, domElements);
     
+    // 以降の各ステップは独立して実行し、1つが失敗しても残りの初期化を続ける。
     // HTMLフォームの実際の初期状態をStateManagerに同期 (Phase3b-3: EventHandlers使用)
-    eventHandlers.syncInitialFormStateToStateManager();
+    safeRun(() => eventHandlers.syncInitialFormStateToStateManager(), 'initializeApp - syncInitialFormState');
     
     // リアクティブ購読設定
-    stateSubscriptions = setupStateSubscriptions(stateManager, domElements, yakuData);
+    stateSubscriptions = safeRun(
+        () => setupStateSubscriptions(stateManager, domElements, yakuData),
+        'initializeApp - setupStateSubscriptions',
+        null
+    );
     
     // 基本UI初期化 (Phase3b-3: EventHandlers完全統合)
-    eventHandlers.setupEventListeners(toggleDetailDisplay);
-    eventHandlers.setupTouchOptimization();
-    generateScoreTable(scoreTable, scoreTableBody);
-    generateYakuList(yakuData, yakuListContainer);
-    eventHandlers.generateYakuSelectionUI();
+    safeRun(() => eventHandlers.setupEventListeners(toggleDetailDisplay), 'initializeApp - setupEventListeners');
+    safeRun(() => eventHandlers.setupTouchOptimization(), 'initializeApp - setupTouchOptimization');
+    safeRun(() => generateScoreTable(scoreTable, scoreTableBody), 'initializeApp - generateScoreTable');
+    safeRun(() => generateYakuList(yakuData, yakuListContainer), 'initializeApp - generateYakuList');
+    safeRun(() => eventHandlers.generateYakuSelectionUI(), 'initializeApp - generateYakuSelectionUI');
     
     // 初期状態の符数制限を設定 (Phase3b: EventHandlers使用)
-    const initialHan = parseInt(hanInput.value);
-    eventHandlers.adjustFuForHanChange(initialHan);
+    safeRun(() => eventHandlers.adjustFuForHanChange(readIntValue(hanInput, 1)), 'initializeApp - adjustFuForHanChange');
     
     // 役選択モードの初期制限も設定（StateManager経由）
-    const currentState = stateManager.getState();
-    const totalHanValue = calculateTotalHan(currentState.selectedYaku, yakuData);
-    stateManager.setTotalHan(totalHanValue);
+    safeStateOperation(() => {
+        const currentState = stateManager.getState();
+        stateManager.setTotalHan(calculateTotalHan(currentState.selectedYaku, yakuData));
+    }, null, 'initializeApp - setTotalHan');
     
     // テスト用: StateManager動作確認
     console.log('StateManager初期化完了:', stateManager.getState());

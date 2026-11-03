@@ -8,6 +8,7 @@ import { validFuByHan, DORA_LIMITS } from '../data/constants.js';
 import { validateYakuSelection, validateYakuAddition } from './yakuValidation.js';
 import { synchronizeYakuState } from './stateSubscriptions.js';
 import { clearYakuFeedback, hideCalculationResult, showYakuIssues } from './yakuSelectionView.js';
+import { safeGetElement, safeQuerySelector, safeQuerySelectorAll, safeRun, safeStateOperation, safeAddListener, readIntValue, reportError } from './errorHandler.js';
 
 // 翻数から符数が決まらないとき（役選択モードで役が未選択など）の増減候補。
 const FALLBACK_FU_STEPS = Object.freeze([20, 30, 40, 50, 60, 70, 80, 90, 100, 110]);
@@ -38,9 +39,10 @@ export class EventHandlers {
         const action = event.target.dataset.action;
         const target = event.target.dataset.target;
         if (this.handleDoraInput(target, action)) return;
-        const input = document.getElementById(target + 'Input');
+        const input = safeGetElement(target + 'Input', 'handleNumberInput');
+        if (!input) return;
         
-        let currentValue = parseInt(input.value);
+        let currentValue = readIntValue(input, target === 'han' ? 1 : 30);
         let newValue = currentValue;
         
         if (target === 'han') {
@@ -66,7 +68,7 @@ export class EventHandlers {
             let currentHan;
             if (target === 'fu') {
                 // 手動入力モードの場合
-                currentHan = parseInt(this.elements.hanInput.value);
+                currentHan = readIntValue(this.elements.hanInput, 1);
             } else {
                 // 役選択モードの場合（StateManager経由）
                 const currentState = this.stateManager.getState();
@@ -77,8 +79,13 @@ export class EventHandlers {
             input.value = newValue;
         }
         // 表示値と状態を揃え、計算前の再検証で直前の符数操作を失わない。
-        if (target === 'han') this.stateManager.setHan(newValue);
-        else this.stateManager.setFu(newValue);
+        // 状態更新に失敗したら、表示を状態側の値に戻して食い違いを残さない。
+        const stateKey = target === 'han' ? 'han' : 'fu';
+        safeStateOperation(
+            () => (stateKey === 'han' ? this.stateManager.setHan(newValue) : this.stateManager.setFu(newValue)),
+            () => { input.value = String(this.stateManager.getState()[stateKey] ?? currentValue); },
+            `handleNumberInput - set ${stateKey}`
+        );
     }
 
     /**
@@ -111,16 +118,16 @@ export class EventHandlers {
         
         if (currentState.inputMode === 'manual') {
             // 手動入力モードでの調整
-            const currentFu = parseInt(this.elements.fuInput.value);
+            const currentFu = readIntValue(this.elements.fuInput, 30);
             const adjustedFu = validateAndAdjustFu(newHan, currentFu, validFuByHan);
             
-            if (adjustedFu !== null) {
+            if (adjustedFu !== null && this.elements.fuInput) {
                 this.elements.fuInput.value = adjustedFu;
                 this.stateManager.setFu(adjustedFu);
             }
             
             // 5翻以上の場合は符数入力を無効化
-            const fuButtons = document.querySelectorAll('[data-target="fu"]');
+            const fuButtons = safeQuerySelectorAll('[data-target="fu"]', 'adjustFuForHanChange');
             if (newHan >= 5) {
                 fuButtons.forEach(btn => {
                     btn.disabled = true;
@@ -157,16 +164,19 @@ export class EventHandlers {
         const targetTab = event.target.dataset.tab;
         
         // タブボタンの状態更新
-        document.querySelectorAll('.tab-btn').forEach(btn => {
+        // 切り替え先が無ければ何も変えず、今のタブを表示したままにする。
+        const targetContent = safeGetElement(targetTab, 'handleTabSwitch');
+        if (!targetContent) return;
+        safeQuerySelectorAll('.tab-btn', 'handleTabSwitch').forEach(btn => {
             btn.classList.remove('active');
         });
         event.target.classList.add('active');
         
         // タブコンテンツの表示切り替え
-        document.querySelectorAll('.tab-content').forEach(content => {
+        safeQuerySelectorAll('.tab-content', 'handleTabSwitch').forEach(content => {
             content.classList.remove('active');
         });
-        document.getElementById(targetTab).classList.add('active');
+        targetContent.classList.add('active');
     }
 
     /**
@@ -247,7 +257,9 @@ export class EventHandlers {
 
         Object.entries(yakuByHan).forEach(([hanValue, yakuList]) => {
             const containerId = hanValue === '13' ? 'yakuYakuman' : `yaku${hanValue}Han`;
-            const container = document.getElementById(containerId);
+            // 1つの翻数の欄が無くても、他の翻数の役は生成する。
+            const container = safeGetElement(containerId, 'generateYakuSelectionUI');
+            if (!container) return;
             
             yakuList.forEach(yaku => {
                 const yakuCheckbox = document.createElement('label');
@@ -263,7 +275,7 @@ export class EventHandlers {
                 yakuText.textContent = yaku.name;
                 yakuCheckbox.append(checkbox, customCheckbox, yakuText);
 
-                checkbox.addEventListener('change', (event) => this.handleYakuSelection(event));
+                safeAddListener(checkbox, 'change', (event) => this.handleYakuSelection(event), 'handleYakuSelection');
                 
                 container.appendChild(yakuCheckbox);
             });
@@ -275,40 +287,43 @@ export class EventHandlers {
      * Phase3b-3: 全イベント処理の統合設定関数（計算ボタンも統合）
      */
     setupEventListeners(toggleDetailDisplay) {
+        // Issue #41: 要素が欠けていても残りのリスナー登録は続け、
+        // ハンドラ内の例外は捕捉してログに残す（safeAddListener）。
         // 数値入力ボタン (Phase3b-1: EventHandlers使用)
-        document.querySelectorAll('.number-btn').forEach(btn => {
-            btn.addEventListener('click', (event) => this.handleNumberInput(event));
+        safeQuerySelectorAll('.number-btn', 'setupEventListeners').forEach(btn => {
+            safeAddListener(btn, 'click', (event) => this.handleNumberInput(event), 'handleNumberInput');
         });
 
         // 計算ボタン (Phase3b-3: EventHandlers内で処理)
-        this.elements.calculateBtn.addEventListener('click', () => this.calculateScore());
+        safeAddListener(this.elements.calculateBtn, 'click', () => this.calculateScore(), 'calculateScore');
 
         // リセットボタン (Issue #5: リセット機能)
-        this.elements.resetBtn.addEventListener('click', () => this.handleResetButton());
+        safeAddListener(this.elements.resetBtn, 'click', () => this.handleResetButton(), 'handleResetButton');
 
         // 詳細表示切り替え
-        this.elements.toggleDetailBtn.addEventListener('click', () => 
-            toggleDetailDisplay(this.elements.detailResult, this.elements.toggleDetailBtn)
+        safeAddListener(this.elements.toggleDetailBtn, 'click', () =>
+            toggleDetailDisplay(this.elements.detailResult, this.elements.toggleDetailBtn),
+            'toggleDetailDisplay'
         );
 
         // タブ切り替え
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', (event) => this.handleTabSwitch(event));
+        safeQuerySelectorAll('.tab-btn', 'setupEventListeners').forEach(btn => {
+            safeAddListener(btn, 'click', (event) => this.handleTabSwitch(event), 'handleTabSwitch');
         });
 
         // 入力モード切り替え
-        document.querySelectorAll('input[name="inputMode"]').forEach(radio => {
-            radio.addEventListener('change', (event) => this.handleInputModeChange(event));
+        safeQuerySelectorAll('input[name="inputMode"]', 'setupEventListeners').forEach(radio => {
+            safeAddListener(radio, 'change', (event) => this.handleInputModeChange(event), 'handleInputModeChange');
         });
         
         // 勝ち方（ロン/ツモ）切り替え
-        document.querySelectorAll('input[name="winType"]').forEach(radio => {
-            radio.addEventListener('change', (event) => this.handleWinTypeChange(event));
+        safeQuerySelectorAll('input[name="winType"]', 'setupEventListeners').forEach(radio => {
+            safeAddListener(radio, 'change', (event) => this.handleWinTypeChange(event), 'handleWinTypeChange');
         });
         
         // 親子切り替え
-        document.querySelectorAll('input[name="playerType"]').forEach(radio => {
-            radio.addEventListener('change', (event) => this.handlePlayerTypeChange(event));
+        safeQuerySelectorAll('input[name="playerType"]', 'setupEventListeners').forEach(radio => {
+            safeAddListener(radio, 'change', (event) => this.handlePlayerTypeChange(event), 'handlePlayerTypeChange');
         });
     }
 
@@ -318,29 +333,29 @@ export class EventHandlers {
      */
     syncInitialFormStateToStateManager() {
         // 入力モードの同期
-        const inputModeElement = document.querySelector('input[name="inputMode"]:checked');
+        const inputModeElement = safeQuerySelector('input[name="inputMode"]:checked', 'syncInitialFormState');
         if (inputModeElement) {
             this.stateManager.setInputMode(inputModeElement.value);
         }
         
         // 和了タイプの同期
-        const winTypeElement = document.querySelector('input[name="winType"]:checked');
+        const winTypeElement = safeQuerySelector('input[name="winType"]:checked', 'syncInitialFormState');
         if (winTypeElement) {
             this.stateManager.setWinType(winTypeElement.value);
         }
         
         // 親子の同期
-        const playerTypeElement = document.querySelector('input[name="playerType"]:checked');
+        const playerTypeElement = safeQuerySelector('input[name="playerType"]:checked', 'syncInitialFormState');
         if (playerTypeElement) {
             this.stateManager.setPlayerType(playerTypeElement.value);
         }
         
         // 符数の同期（初期値）
-        const initialFu = parseInt(this.elements.fuInput.value) || 20;
+        const initialFu = readIntValue(this.elements.fuInput, 0) || 20;
         this.stateManager.setFu(initialFu);
         
         // 翻数の同期（初期値）
-        const initialHan = parseInt(this.elements.hanInput.value) || 1;
+        const initialHan = readIntValue(this.elements.hanInput, 0) || 1;
         this.stateManager.setHan(initialHan);
     }
 
@@ -349,14 +364,15 @@ export class EventHandlers {
      * Issue #5: 全入力値と計算結果をリセット
      */
     handleResetButton() {
-        // StateManagerのリセット機能を呼び出し
-        this.stateManager.resetState();
+        // StateManagerのリセット機能を呼び出し。
+        // 状態のリセットに失敗しても、フォームの初期化は続けて画面を初期表示に戻す。
+        safeStateOperation(() => this.stateManager.resetState(), null, 'handleResetButton - resetState');
         
         // 計算結果セクションを非表示
-        this.elements.resultSection.style.display = 'none';
+        if (this.elements.resultSection) this.elements.resultSection.style.display = 'none';
         
         // DOM要素の明示的な初期化（StateManagerとHTML要素の同期）
-        this.resetFormElements();
+        safeRun(() => this.resetFormElements(), 'handleResetButton - resetFormElements');
         
         // UI更新は stateSubscriptions.js の購読者が自動実行される
     }
@@ -369,15 +385,15 @@ export class EventHandlers {
         clearYakuFeedback();
         showYakuIssues([]);
         // 入力モードを「手動入力」に戻す
-        const manualModeRadio = document.querySelector('input[name="inputMode"][value="manual"]');
+        const manualModeRadio = safeQuerySelector('input[name="inputMode"][value="manual"]', 'resetFormElements');
         if (manualModeRadio) manualModeRadio.checked = true;
         
         // 和了方法を「ロン」に戻す
-        const ronRadio = document.querySelector('input[name="winType"][value="ron"]');
+        const ronRadio = safeQuerySelector('input[name="winType"][value="ron"]', 'resetFormElements');
         if (ronRadio) ronRadio.checked = true;
         
         // 親子を「親」に戻す
-        const parentRadio = document.querySelector('input[name="playerType"][value="parent"]');
+        const parentRadio = safeQuerySelector('input[name="playerType"][value="parent"]', 'resetFormElements');
         if (parentRadio) parentRadio.checked = true;
         
         // 翻数を1に戻す
@@ -394,7 +410,7 @@ export class EventHandlers {
         }
 
         // 役選択をすべてクリア
-        const yakuCheckboxes = document.querySelectorAll('.yaku-input-section input[type="checkbox"]');
+        const yakuCheckboxes = safeQuerySelectorAll('.yaku-input-section input[type="checkbox"]', 'resetFormElements');
         yakuCheckboxes.forEach(checkbox => {
             checkbox.checked = false;
         });
@@ -418,7 +434,7 @@ export class EventHandlers {
         }
         
         // 符数ボタンの有効化（無効状態をクリア）
-        const fuButtons = document.querySelectorAll('[data-target="fu"], [data-target="fuYaku"]');
+        const fuButtons = safeQuerySelectorAll('[data-target="fu"], [data-target="fuYaku"]', 'resetFormElements');
         fuButtons.forEach(btn => {
             btn.disabled = false;
             btn.classList.remove('disabled');
@@ -430,6 +446,17 @@ export class EventHandlers {
      * Phase3b-3: script.jsから分離された計算処理
      */
     calculateScore() {
+        try {
+            this.runCalculation();
+        } catch (error) {
+            // 計算途中の例外で結果が半端に残らないよう、表示を消して利用者に知らせる。
+            reportError('calculateScore', error);
+            safeRun(() => hideCalculationResult(this.elements), 'calculateScore - hideCalculationResult');
+            alert('計算中にエラーが発生しました。入力を確認して、もう一度お試しください。');
+        }
+    }
+
+    runCalculation() {
         hideCalculationResult(this.elements);
         // disabled や購読済み状態を信用せず、直接・一括設定された役も必ず再検証する。
         if (this.stateManager.getState().inputMode === 'yaku') {
@@ -443,13 +470,13 @@ export class EventHandlers {
         let yakumanMultiplier = 1;
         
         if (currentState.inputMode === 'manual') {
-            han = parseInt(this.elements.hanInput.value);
-            fu = parseInt(this.elements.fuInput.value);
+            han = readIntValue(this.elements.hanInput, NaN);
+            fu = readIntValue(this.elements.fuInput, NaN);
         } else {
             // 役選択モードの場合、選択された役から翻数を計算
             const breakdown = calculateHanBreakdown(currentState.selectedYaku, this.yakuData, currentState);
             han = breakdown.totalHan;
-            fu = parseInt(this.elements.fuYakuInput.value);
+            fu = readIntValue(this.elements.fuYakuInput, NaN);
             yakumanMultiplier = breakdown.yakumanMultiplier;
             doraInfo = {
                 ...breakdown,
