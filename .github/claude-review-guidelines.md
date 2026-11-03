@@ -23,7 +23,7 @@
   - 役満にはドラを加算しない。通常役＋ドラが 13翻以上になったら数え役満として扱う。
   - 裏ドラは立直／ダブル立直のときだけ有効。立直を外して裏ドラが残った場合は黙って 0 にせず、役検証（`ura-dora-riichi`）で表示して計算を止める。
   - 上限はドラ 13・赤ドラ 3・裏ドラ 13（`DORA_LIMITS`）。手動入力モードは翻数を直接入力するためドラ入力の対象外。
-- **未対応の機能:** 符の自動計算（#9）、役のフィルタ（#6）。PR の対象外なら、未対応であることを不具合として指摘しない。
+- **未対応の機能:** 符の自動計算（#9）。PR の対象外なら、未対応であることを不具合として指摘しない。
 
 点数表 `js/data/scoreTable.js` や上記の閾値を変える差分は、親/子 × ロン/ツモの 4 通りすべてについて、標準的な点数表の値と照合してください。
 
@@ -33,6 +33,9 @@
 - 検証は「役の選択だけで確定できる制約」に限る方針。牌姿の成立判定・食い下がり・符計算は行わない。この範囲外の判定を求める指摘はしない。
 - 役を追加・変更する場合は、`js/data/yakuData.js`、`yakuValidation.js` の排他ルール（`kokushiCompatible` などの許可リストを含む）、ルール根拠のコメントがそろって更新されているかを確認する。
 - 役満と通常役の物理的に可能な複合は許可する方針。
+- **役のフィルタ（#6）:** 役選択モードで、今の選択・和了条件（ロン/ツモ、親/子、裏ドラ）に追加すると検証に失敗する役を薄く表示する（`yaku-unavailable` クラス）。判定は `yakuValidation.js` の `getUnavailableYaku` で、役を押したときの拒否（`eventHandlers.js` の `handleYakuSelection`）と同じ `validateYakuAddition` を使う。フィルタ用に別の排他判定を書く変更は指摘する。
+  - 薄く表示した役も押せる。押すと選択せずに理由を表示する。`disabled` や `aria-disabled` で押せなくする変更は、理由が分からなくなるので指摘する（支援技術向けには `aria-describedby` で説明を関連付ける）。
+  - 選択済みの役は薄くしない（解除は常に許可）。選択が既に無効なときは、無効を解消できる役（例: 裏ドラが残っているときの立直）だけが濃く残る。
 
 ## 3. 設計方針
 
@@ -51,7 +54,7 @@
 ## 5. テスト
 
 - 計算・符・満貫の変更には Playwright テスト（`tests/calculation.spec.js`、`tests/mangan.spec.js`、`tests/yaku-fu.spec.js` など）の追加・更新があるか。25符の増減と複数役満は `tests/fu-yakuman.spec.js` と `tests/unit/fu-yakuman.node.mjs` が対象。
-- 役の排他ルールの変更には、Node の単体テスト `tests/unit/yaku-validation.node.mjs` と `tests/yaku-consistency.spec.js` の更新があるか。
+- 役の排他ルールの変更には、Node の単体テスト `tests/unit/yaku-validation.node.mjs` と `tests/yaku-consistency.spec.js` の更新があるか。役のフィルタ表示は `tests/yaku-filter.spec.js` が対象。
 - CI は Chromium・モバイル Chrome の全テストと WebKit のスモークテスト（`tests/smoke.spec.js`）を実行する。iPhone の Safari に影響しそうな UI 変更で、スモークテストの範囲が足りているか。
 - 固定時間の待機（`waitForTimeout`）を新たに増やすより、状態を待つ書き方を優先する。
 

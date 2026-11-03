@@ -206,3 +206,23 @@ export function validateYakuSelection(selectedYaku, { winType = 'ron', playerTyp
     }
     return { valid: issues.length === 0, issues };
 }
+
+/**
+ * 副作用なし。選択済みの役に yakuName を足したときの検証結果。
+ * 役選択の可否と選択肢のグレー表示（Issue #6）は、どちらもこの関数で判定する。
+ */
+export function validateYakuAddition(selectedYaku, yakuName, conditions) {
+    const candidate = new Set(selectedYaku);
+    candidate.add(yakuName);
+    return validateYakuSelection(candidate, conditions);
+}
+
+/**
+ * 副作用なし。今の選択と和了条件のままでは追加できない（追加すると検証に失敗する）役の名前。
+ * 選択済みの役は解除を常に許可するので含めない。
+ */
+export function getUnavailableYaku(selectedYaku, conditions, names = Object.keys(yakuValidationAudit)) {
+    const selected = new Set(selectedYaku);
+    return new Set(names.filter(name =>
+        !selected.has(name) && !validateYakuAddition(selected, name, conditions).valid));
+}

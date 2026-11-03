@@ -476,6 +476,25 @@ body {
     display: none;
 }
 
+/* Issue #6: 今の選択に追加できない役。押すと理由を表示するのでタップ領域は変えない。 */
+.yaku-checkbox.yaku-unavailable {
+    background: #f1f3f5;
+    border-style: dashed;
+}
+
+.yaku-checkbox.yaku-unavailable:hover {
+    border-color: #c4ccd3;
+    background: #f1f3f5;
+}
+
+.yaku-checkbox.yaku-unavailable .yaku-text {
+    color: #7a848c;
+}
+
+.yaku-checkbox.yaku-unavailable .checkbox-custom {
+    border-color: #e1e5e9;
+}
+
 .yaku-checkbox input[type="checkbox"]:checked + .checkbox-custom {
     background: #1a472a;
     border-color: #1a472a;

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { yakuData } from '../../js/data/yakuData.js';
-import { validateYakuSelection, yakuValidationAudit } from '../../js/modules/yakuValidation.js';
+import { validateYakuSelection, validateYakuAddition, getUnavailableYaku, yakuValidationAudit } from '../../js/modules/yakuValidation.js';
 import { calculateTotalHan, countYakuman } from '../../js/modules/validator.js';
 import { calculateScoreResult } from '../../js/modules/calculator.js';
 
@@ -214,4 +214,45 @@ test('合法な複合役満と通常役を許可し、役満の数を倍率と�
         assert.equal(countYakuman(new Set(names), yakuData), multiplier, names.join('+'));
         assert.equal(calculateScoreResult(13, 30, 'ron', 'child', undefined, multiplier).score, score, names.join('+'));
     }
+});
+
+// Issue #6: グレー表示する役は、追加しようとしたときに拒否される役と一致する。
+test('役のフィルタ: 追加できない役は追加時の検証と一致し、選択済みの役は含めない', () => {
+    const names = yakuData.map(yaku => yaku.name);
+    const selections = [[], ['七対子'], ['平和', '断幺九'], ['立直', '一発'], ['国士無双'], ['清一色', '一気通貫']];
+    for (const context of [ron, tsumo, { winType: 'tsumo', playerType: 'parent' }]) {
+        for (const selection of selections) {
+            const unavailable = getUnavailableYaku(new Set(selection), context, names);
+            for (const name of names) {
+                const expected = !selection.includes(name) && !validateYakuAddition(new Set(selection), name, context).valid;
+                assert.equal(unavailable.has(name), expected, `${selection.join('・')} + ${name}`);
+            }
+            for (const name of selection) assert.equal(unavailable.has(name), false);
+        }
+    }
+});
+
+test('役のフィルタ: 和了条件で選べない役', () => {
+    const sorted = set => [...set].sort();
+    assert.deepEqual(sorted(getUnavailableYaku(new Set(), ron)),
+        ['一発', '地和', '天和', '嶺上開花', '海底撈月', '門前清自摸和'].sort());
+    assert.deepEqual(sorted(getUnavailableYaku(new Set(), { winType: 'tsumo', playerType: 'parent' })),
+        ['一発', '地和', '槍槓', '河底撈魚'].sort());
+    // 立直を選ぶと一発が選べるようになる。
+    assert.equal(getUnavailableYaku(new Set(['立直']), ron).has('一発'), false);
+});
+
+test('役のフィルタ: 七対子と両立しない役を除外し、両立する役は残す', () => {
+    const unavailable = getUnavailableYaku(new Set(['七対子']), ron);
+    for (const name of ['対々和', '平和', '一盃口', '二盃口', '役牌', '三暗刻']) assert.ok(unavailable.has(name), name);
+    for (const name of ['立直', '断幺九', '混老頭', '混一色', '清一色', '字一色']) assert.ok(!unavailable.has(name), name);
+});
+
+test('役のフィルタ: 既に無効な選択では、解消する役だけを追加できる', () => {
+    // 立直を外して裏ドラが残った状態。立直・ダブル立直の追加で解消できる。
+    const context = { ...ron, uraDoraCount: 1 };
+    const unavailable = getUnavailableYaku(new Set(['断幺九']), context);
+    assert.ok(!unavailable.has('立直'));
+    assert.ok(!unavailable.has('ダブル立直'));
+    assert.ok(unavailable.has('平和'));
 });
