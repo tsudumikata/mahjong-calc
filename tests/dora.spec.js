@@ -221,3 +221,93 @@ test.describe('混老頭と赤ドラの整合性（Issue #39）', () => {
     await expect(page.locator('#mainResult .result-score')).toHaveText('12,000点');
   });
 });
+
+test.describe('赤ドラと両立しない役の拡張（Issue #44）', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.locator('label:has(input[name="playerType"][value="child"])').click();
+    await selectMode(page, 'yaku');
+  });
+
+  // 通常役（純全帯幺九: 3翻30符・子ロン3,900点）と役満（国士無双: 子ロン32,000点）の代表例。
+  for (const { name, han, score } of [
+    { name: '純全帯幺九', han: '3翻', score: '3,900点' },
+    { name: '国士無双', han: '役満', score: '32,000点' },
+  ]) {
+    for (const recovery of ['赤ドラを0枚に戻す', `${name}を解除する`]) {
+      test(`${name}選択後の赤ドラを拒否し、${recovery}と正常に戻る`, async ({ page }) => {
+        await selectYaku(page, name);
+        await expect(page.locator('#totalHan')).toContainText(han);
+        await page.locator('#calculateBtn').click();
+        await expect(page.locator('#mainResult .result-score')).toHaveText(score);
+
+        await addDora(page, 'redDora', 1);
+        await expect(page.locator('#yakuValidationErrors')).toContainText(name);
+        await expect(page.locator('#yakuValidationErrors')).toContainText('赤ドラ');
+        await expect(page.locator('#totalHan')).toHaveText('選択を確認');
+        await expect(page.locator('#resultSection')).toBeHidden();
+        await expect(page.locator('#mainResult')).toBeEmpty();
+        await page.locator('#calculateBtn').click();
+        await expect(page.locator('#resultSection')).toBeHidden();
+
+        if (recovery === '赤ドラを0枚に戻す') {
+          await doraButton(page, 'redDora', 'decrease').click();
+          await expect(page.locator('#yakuValidationErrors')).toBeHidden();
+          await page.locator('#calculateBtn').click();
+          await expect(page.locator('#mainResult .result-score')).toHaveText(score);
+        } else {
+          await selectYaku(page, name);
+          await expect(page.locator('#yakuValidationErrors')).toBeHidden();
+          await selectYaku(page, '断幺九');
+          await page.locator('#calculateBtn').click();
+          // 断幺九1翻＋赤ドラ1 = 2翻30符・子ロン2,000点
+          await expect(page.locator('#mainResult .result-score')).toHaveText('2,000点');
+        }
+      });
+    }
+
+    test(`赤ドラ入力後は${name}をグレー表示し、追加拒否の理由を示す`, async ({ page }) => {
+      await addDora(page, 'redDora', 1);
+      const target = page.locator(`label.yaku-checkbox:has(input[value="${name}"])`);
+      await expect(target).toHaveClass(/yaku-unavailable/);
+      await target.click();
+      await expect(target.locator('input')).not.toBeChecked();
+      await expect(page.locator('#yakuValidationFeedback')).toContainText(name);
+      await expect(page.locator('#yakuValidationFeedback')).toContainText('赤ドラ');
+      await expect(page.locator('#yakuValidationErrors')).toBeHidden();
+
+      await doraButton(page, 'redDora', 'decrease').click();
+      await expect(target).not.toHaveClass(/yaku-unavailable/);
+      await target.click();
+      await expect(target.locator('input')).toBeChecked();
+      await page.locator('#calculateBtn').click();
+      await expect(page.locator('#mainResult .result-score')).toHaveText(score);
+    });
+  }
+
+  test('赤ドラ入力後も5牌を含められる役はグレー表示しない', async ({ page }) => {
+    await addDora(page, 'redDora', 1);
+    for (const name of ['断幺九', '対々和', '混一色', '七対子', '大三元', '九蓮宝燈']) {
+      await expect(page.locator(`label.yaku-checkbox:has(input[value="${name}"])`)).not.toHaveClass(/yaku-unavailable/);
+    }
+    for (const name of ['混全帯幺九', '純全帯幺九', '混老頭', '国士無双', '字一色', '緑一色', '清老頭']) {
+      await expect(page.locator(`label.yaku-checkbox:has(input[value="${name}"])`)).toHaveClass(/yaku-unavailable/);
+    }
+  });
+
+  test('純全帯幺九でも通常ドラと立直時の裏ドラは計算できる', async ({ page }) => {
+    await selectYaku(page, '純全帯幺九');
+    await addDora(page, 'dora', 1);
+    await expect(page.locator('#yakuValidationErrors')).toBeHidden();
+    await page.locator('#calculateBtn').click();
+    // 4翻30符・子ロン
+    await expect(page.locator('#mainResult .result-score')).toHaveText('7,700点');
+
+    await selectYaku(page, '立直');
+    await addDora(page, 'uraDora', 1);
+    await expect(page.locator('#totalHan')).toHaveText('6翻');
+    await expect(page.locator('#yakuValidationErrors')).toBeHidden();
+    await page.locator('#calculateBtn').click();
+    await expect(page.locator('#mainResult .result-score')).toHaveText('12,000点');
+  });
+});
