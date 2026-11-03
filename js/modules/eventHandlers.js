@@ -5,7 +5,7 @@ import { calculateHanBreakdown, calculateTotalHanWithDora, validateAndAdjustFu, 
 import { calculateScoreResult } from './calculator.js';
 import { displayResult } from './display.js';
 import { validFuByHan, DORA_LIMITS } from '../data/constants.js';
-import { validateYakuSelection } from './yakuValidation.js';
+import { validateYakuSelection, validateYakuAddition } from './yakuValidation.js';
 import { synchronizeYakuState } from './stateSubscriptions.js';
 import { clearYakuFeedback, hideCalculationResult, showYakuIssues } from './yakuSelectionView.js';
 
@@ -217,9 +217,8 @@ export class EventHandlers {
         // 追加だけを拒否する。既存の選択は黙って削除せず、解除は常に許可する。
         if (isChecked) {
             const state = this.stateManager.getState();
-            const candidate = new Set(state.selectedYaku);
-            candidate.add(yakuName);
-            const validation = validateYakuSelection(candidate, state);
+            // グレー表示（yakuSelectionView.js）と同じ判定。押されたら理由を表示する。
+            const validation = validateYakuAddition(state.selectedYaku, yakuName, state);
             if (!validation.valid) {
                 event.target.checked = state.selectedYaku.has(yakuName);
                 showYakuIssues(validation.issues, 'yakuValidationFeedback');

@@ -3,6 +3,7 @@ import { yakuData } from '../data/yakuData.js';
 import { DORA_LIMITS, RIICHI_YAKU } from '../data/constants.js';
 import { calculateHanBreakdown } from './validator.js';
 import { getYakumanName } from './calculator.js';
+import { getUnavailableYaku } from './yakuValidation.js';
 
 const issueLabels = {
     structure: '成立条件の矛盾',
@@ -56,9 +57,19 @@ export function renderYakuValidation(state, validation, elements) {
     renderHanBreakdown(breakdown, validation.valid);
     renderDoraInputs(state);
     const invalidNames = new Set(validation.issues.flatMap(issue => issue.yaku));
+    // Issue #6: 今の選択・和了条件に追加できない役をグレー表示する。判定は追加時の拒否と同じ
+    // validateYakuAddition。押せば理由を表示できるよう、無効化（disabled / aria-disabled）はせず
+    // 説明文だけを関連付ける。
+    const unavailable = state.inputMode === 'yaku'
+        ? getUnavailableYaku(state.selectedYaku, state, yakuData.map(yaku => yaku.name))
+        : new Set();
     document.querySelectorAll('.yaku-checkbox input').forEach(checkbox => {
         checkbox.checked = state.selectedYaku.has(checkbox.value);
         checkbox.setAttribute('aria-invalid', String(invalid && invalidNames.has(checkbox.value)));
+        const isUnavailable = unavailable.has(checkbox.value);
+        if (isUnavailable) checkbox.setAttribute('aria-describedby', 'yakuUnavailableHint');
+        else checkbox.removeAttribute('aria-describedby');
+        checkbox.closest('.yaku-checkbox')?.classList.toggle('yaku-unavailable', isUnavailable);
     });
     // 一括更新もフォームに反映し、表示上の選択と計算条件を揃える。
     for (const key of ['inputMode', 'winType', 'playerType']) {
