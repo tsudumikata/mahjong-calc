@@ -4,7 +4,7 @@ import { yakuData } from '../../js/data/yakuData.js';
 import { DORA_LIMITS } from '../../js/data/constants.js';
 import { calculateHanBreakdown, calculateTotalHanWithDora, calculateDoraHan } from '../../js/modules/validator.js';
 import { calculateScoreResult } from '../../js/modules/calculator.js';
-import { validateYakuSelection } from '../../js/modules/yakuValidation.js';
+import { validateYakuSelection, validateYakuAddition, getUnavailableYaku } from '../../js/modules/yakuValidation.js';
 import { createStateManager } from '../../js/modules/stateManager.js';
 
 const yaku = names => new Set(names);
@@ -62,6 +62,62 @@ test('裏ドラは立直・ダブル立直がないと検証エラー', () => {
         assert.equal(ok.valid, true, riichi);
     }
     assert.equal(validateYakuSelection(yaku(['断幺九']), { winType: 'ron', playerType: 'child', uraDoraCount: 0 }).valid, true);
+});
+
+test('混老頭と赤ドラ1〜3枚の矛盾を理由付きで拒否する（Issue #39）', () => {
+    for (const names of [['混老頭'], ['七対子', '混老頭']]) {
+        for (const redDoraCount of [1, 2, 3]) {
+            const result = validateYakuSelection(yaku(names), { redDoraCount });
+            assert.equal(result.valid, false, `${names.join('+')}・赤ドラ${redDoraCount}`);
+            const issue = result.issues.find(issue => issue.code === 'honroutou-red-dora');
+            assert.ok(issue);
+            assert.deepEqual(issue.yaku, ['混老頭']);
+            assert.match(issue.message, /混老頭/);
+            assert.match(issue.message, /赤ドラ/);
+            assert.match(issue.message, /5/);
+        }
+    }
+});
+
+test('赤ドラ入力後の混老頭追加を拒否し、0枚または役解除で復帰する', () => {
+    const selected = yaku(['七対子']);
+    const conditions = { winType: 'ron', playerType: 'child', redDoraCount: 1 };
+    assert.equal(validateYakuAddition(selected, '混老頭', conditions).valid, false);
+    assert.equal(getUnavailableYaku(selected, conditions).has('混老頭'), true);
+    assert.deepEqual([...selected], ['七対子']);
+
+    const honroutou = yaku(['七対子', '混老頭']);
+    assert.equal(validateYakuSelection(honroutou, conditions).valid, false);
+    assert.equal(validateYakuSelection(honroutou, { ...conditions, redDoraCount: 0 }).valid, true);
+    assert.equal(validateYakuSelection(selected, conditions).valid, true);
+    assert.equal(getUnavailableYaku(selected, { ...conditions, redDoraCount: 0 }).has('混老頭'), false);
+});
+
+test('赤ドラなしの七対子＋混老頭は4翻25符・子ロン6400点を維持する', () => {
+    const selected = yaku(['七対子', '混老頭']);
+    for (const counts of [{}, dora()]) {
+        const conditions = { winType: 'ron', playerType: 'child', ...counts };
+        assert.equal(validateYakuSelection(selected, conditions).valid, true);
+        const han = calculateTotalHanWithDora(selected, yakuData, conditions);
+        assert.equal(han, 4);
+        assert.equal(calculateScoreResult(han, 25, 'ron', 'child').score, 6400);
+    }
+});
+
+test('混老頭の通常ドラ・立直時の裏ドラと、合法な役の赤ドラを許可する', () => {
+    for (const { names, counts, han, fu, score } of [
+        { names: ['七対子', '混老頭'], counts: dora(1), han: 5, fu: 25, score: 8000 },
+        { names: ['立直', '七対子', '混老頭'], counts: dora(1, 0, 1), han: 7, fu: 25, score: 12000 },
+        { names: ['七対子'], counts: dora(0, 1), han: 3, fu: 25, score: 3200 },
+        { names: ['断幺九'], counts: dora(0, 1), han: 2, fu: 30, score: 2000 },
+    ]) {
+        const selected = yaku(names);
+        const conditions = { winType: 'ron', playerType: 'child', ...counts };
+        assert.equal(validateYakuSelection(selected, conditions).valid, true, names.join('+'));
+        assert.equal(calculateTotalHanWithDora(selected, yakuData, conditions), han);
+        assert.equal(calculateScoreResult(han, fu, 'ron', 'child').score, score);
+    }
+    assert.equal(validateYakuSelection(yaku(['七対子', '混老頭']), dora(0, 0, 1)).valid, false);
 });
 
 test('StateManager はドラ枚数を範囲内だけ受け付け、リセットで0に戻す', () => {

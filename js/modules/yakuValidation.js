@@ -122,7 +122,7 @@ export const yakuValidationAudit = Object.freeze({
     '対々和': '四刻子。順子との枠と加槓槍槓の待ち牌枚数。',
     '三暗刻': '三刻子以上。門前/暗刻の実態は未判定。四暗刻との物理的複合を許可。',
     '小三元': '三元牌二刻子+雀頭。大三元との矛盾と四面子の枠。',
-    '混老頭': '幺九牌のみ・順子なし。七対子/国士/清老頭の物理的複合を許可。',
+    '混老頭': '幺九牌のみ・順子なし。赤ドラ（5牌）と矛盾。七対子/国士/清老頭の物理的複合を許可。',
     '三色同刻': '三種の数牌の刻子。色役との矛盾と字牌刻子を含む枠。',
     '三槓子': '三槓子以上。四槓子との物理的複合は許可。槓の履歴は未判定。',
     '二盃口': '四順子。七対子と別解釈/一盃口の重複。',
@@ -149,7 +149,7 @@ export const yakuConflictRules = Object.freeze(rules.filter((rule, index) =>
 ).map(rule => Object.freeze({ ...rule, yaku: Object.freeze(rule.yaku) })));
 
 /** 副作用なし。選択済み役と和了条件だけで確定する問題をすべて返す。 */
-export function validateYakuSelection(selectedYaku, { winType = 'ron', playerType = 'parent', uraDoraCount = 0 } = {}) {
+export function validateYakuSelection(selectedYaku, { winType = 'ron', playerType = 'parent', uraDoraCount = 0, redDoraCount = 0 } = {}) {
     const selected = new Set(selectedYaku);
     const issues = [];
     const add = (code, type, yaku, message) => issues.push({ code, type, yaku, message });
@@ -186,6 +186,12 @@ export function validateYakuSelection(selectedYaku, { winType = 'ron', playerTyp
     }
     if (uraDoraCount > 0 && !selected.has('立直') && !selected.has('ダブル立直')) {
         add('ura-dora-riichi', 'prerequisite', [], '裏ドラは立直またはダブル立直で和了したときだけ数えます。立直を選ぶか、裏ドラを0枚にしてください。');
+    }
+    // 赤ドラは各色の5牌（DORA_LIMITSの採用ルール）。幺九牌がドラになることは
+    // あるため、通常ドラ・裏ドラの枚数はこの制約の対象にしない。
+    if (redDoraCount > 0 && selected.has('混老頭')) {
+        add('honroutou-red-dora', 'structure', ['混老頭'],
+            '混老頭は1・9・字牌のみで構成されるため、5牌の赤ドラとは両立しません。赤ドラを0枚にするか、混老頭を解除してください。');
     }
     for (const [name, required] of [['天和', 'parent'], ['地和', 'child']]) {
         if (selected.has(name) && playerType !== required) {

@@ -320,4 +320,51 @@ test.describe('役選択の整合性 #33', () => {
     await expect(page.locator('#resultSection')).toBeHidden();
     await expect(page.locator('#yakuValidationErrors')).toContainText('対々和');
   });
+
+  test('混老頭と赤ドラの直接更新も既存結果を隠し、計算を拒否する（Issue #39）', async ({ page }) => {
+    await installStateHarness(page);
+    await page.evaluate(() => {
+      const { stateManager, handlers } = window.validationHarness;
+      stateManager.setSelectedYaku(new Set(['七対子', '混老頭']));
+      handlers.calculateScore();
+    });
+    await expect(page.locator('#mainResult .result-score')).toHaveText('6,400点');
+
+    await page.evaluate(() => window.validationHarness.stateManager.updateState({ redDoraCount: 1 }));
+    await expect(page.locator('#resultSection')).toBeHidden();
+    await expect(page.locator('#mainResult')).toBeEmpty();
+    await expect(page.locator('#yakuValidationErrors')).toContainText('赤ドラ');
+    await page.evaluate(() => window.validationHarness.handlers.calculateScore());
+    await expect(page.locator('#resultSection')).toBeHidden();
+    await expect(page.locator('#totalHan')).toHaveText('選択を確認');
+
+    await page.evaluate(() => {
+      const { stateManager, handlers } = window.validationHarness;
+      stateManager.updateState({ redDoraCount: 0 });
+      handlers.calculateScore();
+    });
+    await expect(page.locator('#yakuValidationErrors')).toBeHidden();
+    await expect(page.locator('#mainResult .result-score')).toHaveText('6,400点');
+  });
+
+  test('購読を通らない混老頭の追加も赤ドラとの矛盾を計算直前に検出する（Issue #39）', async ({ page }) => {
+    await installStateHarness(page);
+    await page.evaluate(() => {
+      const { stateManager, handlers } = window.validationHarness;
+      stateManager.updateState({ selectedYaku: new Set(['七対子']), redDoraCount: 1 });
+      handlers.calculateScore();
+    });
+    await expect(page.locator('#mainResult .result-score')).toHaveText('3,200点');
+    await page.evaluate(() => {
+      const { stateManager, handlers } = window.validationHarness;
+      stateManager.getState().selectedYaku.add('混老頭');
+      handlers.calculateScore();
+    });
+    await expect(page.locator('#resultSection')).toBeHidden();
+    await expect(page.locator('#mainResult')).toBeEmpty();
+    await expect(page.locator('#yakuValidationErrors')).toContainText('混老頭');
+    await expect(page.locator('#yakuValidationErrors')).toContainText('赤ドラ');
+    await expect(page.locator('#totalHan')).toHaveText('選択を確認');
+    await expect(page.locator('#fuYakuInput')).toHaveValue('');
+  });
 });
