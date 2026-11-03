@@ -5,7 +5,7 @@ const test = base.extend({
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => {
-      if (message.type() === 'error' && message.text().startsWith('StateManager: Error in listener')) {
+      if (message.type() === 'error' && /^(StateManager: Error in listener|\[ErrorHandler\])/.test(message.text())) {
         errors.push(message.text());
       }
     });
