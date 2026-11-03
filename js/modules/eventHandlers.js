@@ -80,11 +80,12 @@ export class EventHandlers {
         }
         // 表示値と状態を揃え、計算前の再検証で直前の符数操作を失わない。
         // 状態更新に失敗したら、表示を状態側の値に戻して食い違いを残さない。
-        const stateKey = target === 'han' ? 'han' : 'fu';
+        const isHan = target === 'han';
+        const stateField = isHan ? 'currentHan' : 'currentFu';
         safeStateOperation(
-            () => (stateKey === 'han' ? this.stateManager.setHan(newValue) : this.stateManager.setFu(newValue)),
-            () => { input.value = String(this.stateManager.getState()[stateKey] ?? currentValue); },
-            `handleNumberInput - set ${stateKey}`
+            () => (isHan ? this.stateManager.setHan(newValue) : this.stateManager.setFu(newValue)),
+            () => { input.value = String(this.stateManager.getState()[stateField] ?? currentValue); },
+            `handleNumberInput - set ${isHan ? 'han' : 'fu'}`
         );
     }
 

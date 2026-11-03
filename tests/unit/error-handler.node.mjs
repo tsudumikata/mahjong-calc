@@ -123,3 +123,23 @@ test('readIntValue: 要素が無い・数値でないときはフォールバッ
     assert.equal(readIntValue(null, 1), 1);
     assert.ok(Number.isNaN(readIntValue(undefined, NaN)));
 });
+
+test('handleNumberInput: 状態更新が途中で失敗したら、入力欄を確定済みの状態値に合わせる', async t => {
+    captureErrors(t);
+    const fuInput = { value: '30' };
+    stubDocument(t, { elements: { fuInput } });
+    const { createEventHandlers } = await import('../../js/modules/eventHandlers.js');
+    const manager = createStateManager();
+    manager.setHan(2);
+    manager.setFu(30);
+    // 値を確定させたあとで例外を出す setFu
+    const originalSetFu = manager.setFu.bind(manager);
+    manager.setFu = value => {
+        originalSetFu(value);
+        throw new Error('after commit');
+    };
+    const handlers = createEventHandlers(manager, [], { hanInput: { value: '2' } });
+    assert.doesNotThrow(() => handlers.handleNumberInput({ target: { dataset: { action: 'increase', target: 'fu' } } }));
+    assert.equal(manager.getState().currentFu, 40);
+    assert.equal(fuInput.value, '40');
+});
