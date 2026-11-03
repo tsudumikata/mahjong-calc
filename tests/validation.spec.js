@@ -1,13 +1,13 @@
 import { test as base, expect } from '@playwright/test';
 import { setFuValue } from './test-utils.js';
 
-// StateManager catches subscriber exceptions, so pageerror alone cannot detect them.
+// StateManager and ErrorHandler catch exceptions and log them, so pageerror alone cannot detect them.
 const test = base.extend({
   appErrors: [async ({ page }, use) => {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => {
-      if (message.type() === 'error' && message.text().startsWith('StateManager: Error in listener')) {
+      if (message.type() === 'error' && /^(StateManager: Error in listener|\[ErrorHandler\])/.test(message.text())) {
         errors.push(message.text());
       }
     });
