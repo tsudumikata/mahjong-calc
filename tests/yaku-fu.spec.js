@@ -93,8 +93,9 @@ test.describe('役選択の固定符数の回帰テスト', () => {
       await expectFu(page, 25, true);
     }
 
+    // 手動入力の翻数は1翻のままなので、七対子の25符は1翻で有効な30符に補正して引き継ぐ。
     await selectMode(page, 'manual');
-    await expect(page.locator('#fuInput')).toHaveValue('25');
+    await expect(page.locator('#fuInput')).toHaveValue('30');
     await selectMode(page, 'yaku');
     await expectFu(page, 25, true);
     // 河底撈魚はロン限定。固定符数の切り替え確認は矛盾のない選択で行う。
@@ -112,9 +113,11 @@ test.describe('役選択の固定符数の回帰テスト', () => {
     await selectYaku(page, '七対子');
     await expect(page.locator('#totalHan')).toHaveText('5翻');
     await expectFu(page, 25, true);
+    // 手動入力（1翻）を経由すると25符は30符に補正される。5翻以上なので点数には影響しない。
     await selectMode(page, 'manual');
+    await expect(page.locator('#fuInput')).toHaveValue('30');
     await selectMode(page, 'yaku');
-    await expectFu(page, 25, true);
+    await expectFu(page, 30, true);
     await selectYaku(page, '一発');
     await expect(page.locator('#totalHan')).toHaveText('4翻');
     await expectFu(page, 30, false);

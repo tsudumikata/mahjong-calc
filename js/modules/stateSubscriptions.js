@@ -90,7 +90,11 @@ function synchronizeFuInputs(inputMode, domElements, stateManager) {
     if (fuInput && fuYakuInput) {
         if (inputMode === 'manual') {
             // 役選択モードから手動入力モードに切り替える時、符数を同期
-            const fu = parseInt(fuYakuInput.value) || currentState.currentFu;
+            // 七対子の25符や平和ツモの20符を引き継いでも、手動入力の翻数で無効な組み合わせ
+            // （1翻25符など）にならないよう補正する。
+            const syncedFu = parseInt(fuYakuInput.value) || currentState.currentFu;
+            const manualHan = parseInt(domElements.hanInput?.value);
+            const fu = validateAndAdjustFu(manualHan, syncedFu, validFuByHan) ?? syncedFu;
             fuInput.value = fu;
             stateManager.setFu(fu);
         } else if (inputMode === 'yaku') {

@@ -84,7 +84,7 @@
                             <h2>符数</h2>
                             <div class="number-input-group">
                                 <button class="number-btn" data-action="decrease" data-target="fu">-</button>
-                                <input type="number" id="fuInput" value="30" min="20" max="110" step="10" readonly>
+                                <input type="number" id="fuInput" value="30" min="20" max="110" step="5" readonly>
                                 <button class="number-btn" data-action="increase" data-target="fu">+</button>
                             </div>
                         </div>
@@ -167,7 +167,7 @@
                                 <h3>合計翻数</h3>
                                 <div class="total-han" id="totalHan">0翻</div>
                                 <p id="hanBreakdown" class="han-breakdown" hidden></p>
-                                <p id="yakumanScoringNote" class="yaku-validation-note" hidden>現行仕様では複数の役満も1役満として計算し、一般役の翻数は加算しません。</p>
+                                <p id="yakumanScoringNote" class="yaku-validation-note" hidden>役満は選んだ役満の数だけ倍になります（2つでダブル役満）。一般役の翻数とドラは加算しません。</p>
                             </div>
                         </div>
 
@@ -175,7 +175,7 @@
                             <h2>符数</h2>
                             <div class="number-input-group">
                                 <button class="number-btn" data-action="decrease" data-target="fuYaku">-</button>
-                                <input type="number" id="fuYakuInput" value="30" min="20" max="110" step="10" readonly>
+                                <input type="number" id="fuYakuInput" value="30" min="20" max="110" step="5" readonly>
                                 <button class="number-btn" data-action="increase" data-target="fuYaku">+</button>
                             </div>
                         </div>
