@@ -5,8 +5,8 @@ import { yakuData } from '../data/yakuData.js';
 // https://www.nihon-majan.org/ritimajyanyakuitiran.html
 // https://saikouisen.com/pdf/saikouisen_regulation.pdf 第47〜48条
 // https://m-league.jp/about/ 第5章第4条、第9章第1条
-// 役満と通常役の物理的に可能な複合は許可する。通常役を加点しないこと、
-// 複数役満でも13翻とする現在の得点仕様は calculateTotalHan の責務（Issue #8）。
+// 役満と通常役の物理的に可能な複合は許可する。通常役を加点しないことは
+// calculateTotalHan、複数役満の倍率（役満の数）は countYakuman の責務（Issue #8）。
 
 const rules = [];
 function exclude(name, others, type, reason) {

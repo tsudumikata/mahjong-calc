@@ -58,6 +58,8 @@ test.describe('符数検証の回帰テスト', () => {
     await decreaseHan.click();
     await setFuValue(page, 30);
     await page.locator('[data-target="fu"][data-action="decrease"]').click();
+    await expect(page.locator('#fuInput')).toHaveValue('25'); // 2翻では七対子の25符も有効（#22）
+    await page.locator('[data-target="fu"][data-action="decrease"]').click();
     await expect(page.locator('#fuInput')).toHaveValue('20'); // 2翻では有効
     await decreaseHan.click();
     await expect(page.locator('#hanInput')).toHaveValue('1');
@@ -78,6 +80,8 @@ test.describe('符数検証の回帰テスト', () => {
     }
     await expect(page.locator('#hanInput')).toHaveValue('4');
     await expectFuButtons(page, 'fu', false);
+    await page.locator('[data-target="fu"][data-action="decrease"]').click();
+    await expect(page.locator('#fuInput')).toHaveValue('25');
     await page.locator('[data-target="fu"][data-action="decrease"]').click();
     await expect(page.locator('#fuInput')).toHaveValue('20');
   });

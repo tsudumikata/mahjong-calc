@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { yakuData } from '../../js/data/yakuData.js';
 import { validateYakuSelection, yakuValidationAudit } from '../../js/modules/yakuValidation.js';
-import { calculateTotalHan } from '../../js/modules/validator.js';
+import { calculateTotalHan, countYakuman } from '../../js/modules/validator.js';
 import { calculateScoreResult } from '../../js/modules/calculator.js';
 
 const ron = { winType: 'ron', playerType: 'child' };
@@ -204,13 +204,14 @@ test('合法な通常役の翻・固定符と得点を維持', () => {
     }
 });
 
-test('合法な複合役満と通常役を許可し、現行の単一役満集計を変更しない', () => {
-    for (const names of [
-        ['大三元', '字一色'], ['四暗刻', '対々和', '三暗刻'], ['清老頭', '混老頭'],
-        ['四槓子', '三槓子'], ['九蓮宝燈', '一気通貫', '清一色']
+test('合法な複合役満と通常役を許可し、役満の数を倍率として数える', () => {
+    for (const [names, multiplier, score] of [
+        [['大三元', '字一色'], 2, 64000], [['四暗刻', '対々和', '三暗刻'], 1, 32000], [['清老頭', '混老頭'], 1, 32000],
+        [['四槓子', '三槓子'], 1, 32000], [['九蓮宝燈', '一気通貫', '清一色'], 1, 32000]
     ]) {
         assert.equal(validate(names).valid, true, names.join('+'));
         assert.equal(calculateTotalHan(new Set(names), yakuData), 13);
-        assert.equal(calculateScoreResult(13, 30, 'ron', 'child').score, 32000);
+        assert.equal(countYakuman(new Set(names), yakuData), multiplier, names.join('+'));
+        assert.equal(calculateScoreResult(13, 30, 'ron', 'child', undefined, multiplier).score, score, names.join('+'));
     }
 });

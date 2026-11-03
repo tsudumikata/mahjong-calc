@@ -5,7 +5,7 @@
  * 選択された役から合計翻数を計算
  * @param {Set} selectedYakuSet - 選択された役のSet
  * @param {Array} yakuDataArray - 役データ配列
- * @returns {number} 合計翻数（役満の場合は13）
+ * @returns {number} 合計翻数（役満の場合は役満の数に関わらず13。倍率は countYakuman）
  */
 export function calculateTotalHan(selectedYakuSet, yakuDataArray) {
     let total = 0;
@@ -27,16 +27,28 @@ export function calculateTotalHan(selectedYakuSet, yakuDataArray) {
 }
 
 /**
+ * 選択された役満の数（複数役満の倍率）
+ * 役満同士は複合し、役満1つにつき1倍を加える（大三元+字一色 = ダブル役満）。
+ * 四暗刻単騎などを単独でダブル役満とする扱いは採用しない。
+ * @param {Set} selectedYakuSet - 選択された役のSet
+ * @param {Array} yakuDataArray - 役データ配列
+ * @returns {number} 役満の数（役満がなければ0）
+ */
+export function countYakuman(selectedYakuSet, yakuDataArray) {
+    return Array.from(selectedYakuSet).filter(yakuName => {
+        const yaku = yakuDataArray.find(y => y.name === yakuName);
+        return Boolean(yaku && yaku.han >= 13);
+    }).length;
+}
+
+/**
  * 役満が選択されているか
  * @param {Set} selectedYakuSet - 選択された役のSet
  * @param {Array} yakuDataArray - 役データ配列
  * @returns {boolean}
  */
 export function hasYakumanYaku(selectedYakuSet, yakuDataArray) {
-    return Array.from(selectedYakuSet).some(yakuName => {
-        const yaku = yakuDataArray.find(y => y.name === yakuName);
-        return Boolean(yaku && yaku.han >= 13);
-    });
+    return countYakuman(selectedYakuSet, yakuDataArray) > 0;
 }
 
 /**
@@ -52,18 +64,23 @@ export function calculateDoraHan({ doraCount = 0, redDoraCount = 0, uraDoraCount
  * 役とドラを合わせた翻数の内訳を返す
  * - ドラは役ではないため、役がない場合は0翻（和了不可）
  * - 役満にはドラを加算しない
- * - 通常役+ドラが13翻以上なら数え役満として getScoreFromTable が扱う
+ * - 通常役+ドラが13翻以上なら数え役満として getScoreFromTable が扱う（倍率は1のまま）
+ * - yakumanMultiplier は選択した役満の数。数え役満や通常役では1
  * @param {Set} selectedYakuSet - 選択された役のSet
  * @param {Array} yakuDataArray - 役データ配列
  * @param {Object} doraState - { doraCount, redDoraCount, uraDoraCount }
- * @returns {{ yakuHan: number, doraHan: number, appliedDoraHan: number, totalHan: number, isYakuman: boolean }}
+ * @returns {{ yakuHan: number, doraHan: number, appliedDoraHan: number, totalHan: number, isYakuman: boolean, yakumanMultiplier: number }}
  */
 export function calculateHanBreakdown(selectedYakuSet, yakuDataArray, doraState = {}) {
     const yakuHan = calculateTotalHan(selectedYakuSet, yakuDataArray);
     const doraHan = calculateDoraHan(doraState);
-    const isYakuman = hasYakumanYaku(selectedYakuSet, yakuDataArray);
+    const yakumanCount = countYakuman(selectedYakuSet, yakuDataArray);
+    const isYakuman = yakumanCount > 0;
     const appliedDoraHan = (yakuHan === 0 || isYakuman) ? 0 : doraHan;
-    return { yakuHan, doraHan, appliedDoraHan, totalHan: yakuHan + appliedDoraHan, isYakuman };
+    return {
+        yakuHan, doraHan, appliedDoraHan, totalHan: yakuHan + appliedDoraHan, isYakuman,
+        yakumanMultiplier: Math.max(1, yakumanCount)
+    };
 }
 
 /**
@@ -155,4 +172,18 @@ export function validateAndAdjustFu(han, currentFu, validFuByHanObj) {
     }
     
     return currentFu; // デフォルト
+}
+
+/**
+ * 符数の増減ボタンで次に表示する符数
+ * 有効な符数の一覧を順にたどる（2〜4翻なら 20→25→30→40…）。端では現在値のまま。
+ * @param {number[]} fuList - 昇順の有効な符数
+ * @param {number} currentFu - 現在の符数
+ * @param {string} action - 'increase' | 'decrease'
+ * @returns {number} 次の符数
+ */
+export function getSteppedFu(fuList, currentFu, action) {
+    if (action === 'increase') return fuList.find(fu => fu > currentFu) ?? currentFu;
+    if (action === 'decrease') return fuList.findLast(fu => fu < currentFu) ?? currentFu;
+    return currentFu;
 }

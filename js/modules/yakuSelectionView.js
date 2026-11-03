@@ -2,6 +2,7 @@
 import { yakuData } from '../data/yakuData.js';
 import { DORA_LIMITS, RIICHI_YAKU } from '../data/constants.js';
 import { calculateHanBreakdown } from './validator.js';
+import { getYakumanName } from './calculator.js';
 
 const issueLabels = {
     structure: '成立条件の矛盾',
@@ -43,12 +44,12 @@ export function hideCalculationResult(elements) {
 export function renderYakuValidation(state, validation, elements) {
     const invalid = state.inputMode === 'yaku' && !validation.valid;
     showYakuIssues(invalid ? validation.issues : []);
+    const breakdown = calculateHanBreakdown(state.selectedYaku, yakuData, state);
     if (elements.totalHan) {
         elements.totalHan.textContent = validation.valid
-            ? (state.totalHan >= 13 ? '役満' : `${state.totalHan}翻`)
+            ? (state.totalHan >= 13 ? getYakumanName(breakdown.yakumanMultiplier) : `${state.totalHan}翻`)
             : '選択を確認';
     }
-    const breakdown = calculateHanBreakdown(state.selectedYaku, yakuData, state);
     const yakumanNote = document.getElementById('yakumanScoringNote');
     // 数え役満（通常役+ドラ）では一般役を加算するため、役満選択時だけ表示する。
     if (yakumanNote) yakumanNote.hidden = invalid || !breakdown.isYakuman;

@@ -176,7 +176,7 @@ test.describe('役選択の整合性 #33', () => {
     { roles: ['平和', '一盃口'], han: '2翻', fu: '30', score: '2,000点' },
     { roles: ['七対子', '断幺九'], han: '3翻', fu: '25', score: '3,200点' },
     { roles: ['対々和', '三暗刻'], han: '4翻', fu: '40', score: '8,000点', initialFu: 40 },
-    { roles: ['大三元', '字一色'], han: '役満', fu: null, score: '32,000点' },
+    { roles: ['大三元', '字一色'], han: 'ダブル役満', fu: null, score: '64,000点' },
     { roles: ['大三元', '役牌'], han: '役満', fu: null, score: '32,000点' },
     { roles: ['立直', '一発', '槍槓'], han: '3翻', fu: '30', score: '3,900点' },
   ];

@@ -1,13 +1,26 @@
 // イベント処理専門モジュール - Phase3b実装
 // StateManager統合済みのイベント処理を提供
 
-import { calculateHanBreakdown, calculateTotalHanWithDora, validateAndAdjustFu } from './validator.js';
+import { calculateHanBreakdown, calculateTotalHanWithDora, validateAndAdjustFu, getSteppedFu } from './validator.js';
 import { calculateScoreResult } from './calculator.js';
 import { displayResult } from './display.js';
 import { validFuByHan, DORA_LIMITS } from '../data/constants.js';
 import { validateYakuSelection } from './yakuValidation.js';
 import { synchronizeYakuState } from './stateSubscriptions.js';
 import { clearYakuFeedback, hideCalculationResult, showYakuIssues } from './yakuSelectionView.js';
+
+// 翻数から符数が決まらないとき（役選択モードで役が未選択など）の増減候補。
+const FALLBACK_FU_STEPS = Object.freeze([20, 30, 40, 50, 60, 70, 80, 90, 100, 110]);
+
+/**
+ * 符数の増減ボタンでたどる符数の一覧
+ * - 手動入力: 翻数ごとの有効な符数すべて（2〜4翻は 25符を含む）
+ * - 役選択: 25符は七対子の固定符で自動設定されるため、増減の候補から外す
+ */
+function getFuStepList(han, target) {
+    const validFuList = validFuByHan[han]?.length ? validFuByHan[han] : FALLBACK_FU_STEPS;
+    return target === 'fuYaku' ? validFuList.filter(fu => fu !== 25) : validFuList;
+}
 
 export class EventHandlers {
     constructor(stateManager, yakuData, domElements) {
@@ -59,27 +72,7 @@ export class EventHandlers {
                 const currentState = this.stateManager.getState();
                 currentHan = calculateTotalHanWithDora(currentState.selectedYaku, this.yakuData, currentState);
             }
-            const validFuList = validFuByHan[currentHan] || [];
-            
-            if (action === 'increase' && currentValue < 110) {
-                let testValue = currentValue + 10;
-                // 有効な符数まで進める
-                while (testValue <= 110 && validFuList.length > 0 && !validFuList.includes(testValue)) {
-                    testValue += 10;
-                }
-                if (testValue <= 110 && (validFuList.length === 0 || validFuList.includes(testValue))) {
-                    newValue = testValue;
-                }
-            } else if (action === 'decrease' && currentValue > 20) {
-                let testValue = currentValue - 10;
-                // 有効な符数まで戻す
-                while (testValue >= 20 && validFuList.length > 0 && !validFuList.includes(testValue)) {
-                    testValue -= 10;
-                }
-                if (testValue >= 20 && (validFuList.length === 0 || validFuList.includes(testValue))) {
-                    newValue = testValue;
-                }
-            }
+            newValue = getSteppedFu(getFuStepList(currentHan, target), currentValue, action);
             
             input.value = newValue;
         }
@@ -448,6 +441,7 @@ export class EventHandlers {
         const currentState = this.stateManager.getState();
         let han, fu;
         let doraInfo = null;
+        let yakumanMultiplier = 1;
         
         if (currentState.inputMode === 'manual') {
             han = parseInt(this.elements.hanInput.value);
@@ -457,6 +451,7 @@ export class EventHandlers {
             const breakdown = calculateHanBreakdown(currentState.selectedYaku, this.yakuData, currentState);
             han = breakdown.totalHan;
             fu = parseInt(this.elements.fuYakuInput.value);
+            yakumanMultiplier = breakdown.yakumanMultiplier;
             doraInfo = {
                 ...breakdown,
                 doraCount: currentState.doraCount,
@@ -474,7 +469,7 @@ export class EventHandlers {
         const playerType = currentState.playerType;
         
         // 純粋関数を使用した計算
-        const result = calculateScoreResult(han, fu, winType, playerType);
+        const result = calculateScoreResult(han, fu, winType, playerType, undefined, yakumanMultiplier);
         
         if (result) {
             displayResult(

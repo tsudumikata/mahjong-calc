@@ -66,7 +66,10 @@ export function displayResult(result, han, fu, winType, playerType, inputMode = 
     // 詳細表示
     detailResultElement.replaceChildren();
     appendTextElement(detailResultElement, 'h4', '計算詳細');
-    [`翻数: ${han}翻`, `符数: ${fu}符`, `和了方法: ${winTypeText}`,
+    // 複数役満は13翻の倍数ではなく役満の数で表す（数え役満は1倍のまま）。
+    const multiplier = doraInfo?.yakumanMultiplier ?? 1;
+    const hanText = han >= 13 && multiplier > 1 ? `役満×${multiplier}` : `${han}翻`;
+    [`翻数: ${hanText}`, `符数: ${fu}符`, `和了方法: ${winTypeText}`,
         `親子: ${playerTypeText}`, `点数名: ${result.name}`]
         .forEach(text => appendDetailItem(detailResultElement, text));
     
