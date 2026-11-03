@@ -1,0 +1,62 @@
+name: Claude code review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Claude review
+    # Skip drafts and PRs from forks (forks don't receive repository secrets).
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Review pull request with Claude
+        uses: anthropics/claude-code-action@a26b07d8c778b0c43f64618e5fd29fd0f8af72e8 # v1.0.250
+        with:
+          # Whichever of these secrets is configured is used; the other may be left unset.
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            このプルリクエストをレビューしてください。レビューは日本語で書いてください。
+
+            このリポジトリは麻雀の点数計算 Web アプリ（素の HTML / CSS / JavaScript、Playwright で E2E テスト）です。
+            次の観点を優先して確認してください。
+
+            1. 点数計算の正しさ: 符計算、翻数、役の成立条件と複合・排他、満貫以上の閾値、親/子・ツモ/ロンの支払い
+            2. バグや境界条件: 入力の組み合わせによる誤判定、例外、状態の不整合
+            3. UI の挙動: モバイル（Safari / Chrome）での表示や操作に影響する変更
+            4. テスト: 変更に対応するテストの有無と、追加すべきケース
+            5. セキュリティ: DOM への安全でない挿入など
+
+            `gh pr diff` と `gh pr view` で差分と説明を確認し、必要に応じてリポジトリ内のファイルを読んでください。
+            具体的な行への指摘は mcp__github_inline_comment__create_inline_comment でインラインコメントにしてください。
+            最後に `gh pr comment` で全体のまとめを 1 件だけ投稿してください。問題が見つからなければ、その旨を短く書いてください。
+            細かいスタイルの好みより、実際の不具合につながる指摘を優先してください。
+          claude_args: |
+            --max-turns 30
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Glob,Grep"
