@@ -22,7 +22,9 @@
   - ドラは役ではないので、役が 1 つ以上あるときだけ加算する（ドラのみは 0翻で「役なし」）。
   - 役満にはドラを加算しない。通常役＋ドラが 13翻以上になったら数え役満として扱う。
   - 裏ドラは立直／ダブル立直のときだけ有効。立直を外して裏ドラが残った場合は黙って 0 にせず、役検証（`ura-dora-riichi`）で表示して計算を止める。
-  - 混老頭と赤ドラ1枚以上は、幺九牌のみの構成に5牌を含められないため矛盾として計算を止める（#39、`honroutou-red-dora`）。赤ドラを0枚に戻すか混老頭を解除すると再計算できる。通常ドラ・裏ドラまで禁止しない。
+  - 赤ドラ（各色の5牌）を一枚も含められない役と赤ドラ1枚以上は、矛盾として計算を止める（#39、#44、`red-dora-structure`）。対象は混全帯幺九・純全帯幺九・混老頭・国士無双・字一色・緑一色・清老頭で、一覧と理由は `yakuValidation.js` の `redDoraIncompatibleYaku` だけで管理する。役満はドラを加算しないが、物理的に不可能な入力として同じく拒否する。赤ドラを0枚に戻すか対象役を解除すると再計算できる。
+    - 5牌を含められる役（対々和・混一色・七対子・大三元・九蓮宝燈など）を赤ドラと排他にする変更、通常ドラ・裏ドラまで一律に禁止する変更は指摘する。
+    - UI・フィルタ・計算前ガードのどれかに赤ドラ用の別判定を書く変更は指摘する（すべて `validateYakuSelection` 経由）。
   - 上限はドラ 13・赤ドラ 3・裏ドラ 13（`DORA_LIMITS`）。手動入力モードは翻数を直接入力するためドラ入力の対象外。
 - **未対応の機能:** 符の自動計算（#9）。PR の対象外なら、未対応であることを不具合として指摘しない。
 
@@ -55,7 +57,7 @@
 ## 5. テスト
 
 - 計算・符・満貫の変更には Playwright テスト（`tests/calculation.spec.js`、`tests/mangan.spec.js`、`tests/yaku-fu.spec.js` など）の追加・更新があるか。25符の増減と複数役満は `tests/fu-yakuman.spec.js` と `tests/unit/fu-yakuman.node.mjs` が対象。
-- 役の排他ルールの変更には、Node の単体テスト `tests/unit/yaku-validation.node.mjs` と `tests/yaku-consistency.spec.js` の更新があるか。役のフィルタ表示は `tests/yaku-filter.spec.js` が対象。
+- 役の排他ルールの変更には、Node の単体テスト `tests/unit/yaku-validation.node.mjs` と `tests/yaku-consistency.spec.js` の更新があるか。赤ドラと役の矛盾は `tests/unit/dora.node.mjs`（対象役の棚卸しを独立に列挙）と `tests/dora.spec.js` が対象。役のフィルタ表示は `tests/yaku-filter.spec.js` が対象。
 - CI は Chromium・モバイル Chrome の全テストと WebKit のスモークテスト（`tests/smoke.spec.js`）を実行する。iPhone の Safari に影響しそうな UI 変更で、スモークテストの範囲が足りているか。
 - 固定時間の待機（`waitForTimeout`）を新たに増やすより、状態を待つ書き方を優先する。
 

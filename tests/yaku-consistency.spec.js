@@ -367,4 +367,57 @@ test.describe('役選択の整合性 #33', () => {
     await expect(page.locator('#totalHan')).toHaveText('選択を確認');
     await expect(page.locator('#fuYakuInput')).toHaveValue('');
   });
+  for (const { name, score } of [
+    { name: '混全帯幺九', score: '2,000点' },
+    { name: '字一色', score: '32,000点' },
+  ]) {
+    test(`${name}と赤ドラの直接更新も既存結果を隠し、計算直前に拒否する（Issue #44）`, async ({ page }) => {
+      await installStateHarness(page);
+      await page.evaluate(name => {
+        const { stateManager, handlers } = window.validationHarness;
+        stateManager.setSelectedYaku(new Set([name]));
+        handlers.calculateScore();
+      }, name);
+      await expect(page.locator('#mainResult .result-score')).toHaveText(score);
+
+      await page.evaluate(() => window.validationHarness.stateManager.updateState({ redDoraCount: 2 }));
+      await expect(page.locator('#resultSection')).toBeHidden();
+      await expect(page.locator('#mainResult')).toBeEmpty();
+      await expect(page.locator('#yakuValidationErrors')).toContainText(name);
+      await expect(page.locator('#yakuValidationErrors')).toContainText('赤ドラ');
+      await page.evaluate(() => window.validationHarness.handlers.calculateScore());
+      await expect(page.locator('#resultSection')).toBeHidden();
+      await expect(page.locator('#totalHan')).toHaveText('選択を確認');
+
+      await page.evaluate(() => {
+        const { stateManager, handlers } = window.validationHarness;
+        stateManager.updateState({ redDoraCount: 0 });
+        handlers.calculateScore();
+      });
+      await expect(page.locator('#yakuValidationErrors')).toBeHidden();
+      await expect(page.locator('#mainResult .result-score')).toHaveText(score);
+    });
+  }
+
+  test('購読を通らない役満の追加も赤ドラとの矛盾を計算直前に検出する（Issue #44）', async ({ page }) => {
+    await installStateHarness(page);
+    await page.evaluate(() => {
+      const { stateManager, handlers } = window.validationHarness;
+      stateManager.updateState({ selectedYaku: new Set(['対々和']), redDoraCount: 1 });
+      handlers.calculateScore();
+    });
+    await expect(page.locator('#resultSection')).toBeVisible();
+    await page.evaluate(() => {
+      const { stateManager, handlers } = window.validationHarness;
+      const selected = stateManager.getState().selectedYaku;
+      selected.delete('対々和');
+      selected.add('清老頭');
+      handlers.calculateScore();
+    });
+    await expect(page.locator('#resultSection')).toBeHidden();
+    await expect(page.locator('#mainResult')).toBeEmpty();
+    await expect(page.locator('#yakuValidationErrors')).toContainText('清老頭');
+    await expect(page.locator('#yakuValidationErrors')).toContainText('赤ドラ');
+    await expect(page.locator('#totalHan')).toHaveText('選択を確認');
+  });
 });
