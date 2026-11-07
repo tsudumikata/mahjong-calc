@@ -101,7 +101,9 @@ test('#9 和了形として両立しない入力は issues を返し、符は nu
         ['シャンポンロンで明刻なし', hand({ wait: 'shanpon', melds: ['a', 'a', 's', 's'] }), 'ron', 'shanpon-ron-minko'],
         ['シャンポンツモで暗刻なし', hand({ menzen: false, wait: 'shanpon', melds: ['m', 'm', 's', 's'] }), 'tsumo', 'shanpon-tsumo-anko'],
         ['両面待ちで順子なし', hand({ melds: ['a', 'a', 'a', 'a'] }), 'tsumo', 'wait-needs-shuntsu'],
-        ['辺張待ちで順子なし', hand({ menzen: false, wait: 'penchan', melds: ['m', 'm', 'm', 'm'] }), 'ron', 'wait-needs-shuntsu']
+        ['辺張待ちで順子なし', hand({ menzen: false, wait: 'penchan', melds: ['m', 'm', 'm', 'm'] }), 'ron', 'wait-needs-shuntsu'],
+        ['副露なのに暗刻・暗槓だけ', hand({ menzen: false, wait: 'tanki', melds: ['a', 'a9', 'A', 'a'] }), 'tsumo', 'open-needs-called-meld'],
+        ['副露・シャンポンロンで明刻がロンで完成した1つだけ', hand({ menzen: false, wait: 'shanpon', melds: ['m', 'a', 'a', 'a'] }), 'ron', 'open-needs-called-meld']
     ];
     for (const [label, composition, winType, code] of cases) {
         const result = fuOf(composition, winType);

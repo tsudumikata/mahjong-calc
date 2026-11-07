@@ -84,6 +84,10 @@ function checkConsistency({ menzen, wait, melds }, winType, issues) {
                 : '門前で明刻を選べるのは、シャンポン待ちをロンで完成させた刻子だけです。暗刻に直すか副露を選んでください。'
         });
     }
+    // 副露なら、鳴いた面子（順子・明刻・明槓）が少なくとも1つ要る。シャンポンロンで完成した明刻は鳴いた面子ではない。
+    if (!menzen && shuntsu === 0 && count('minkan') === 0 && minko <= menzenMinkoAllowed) {
+        issues.push({ code: 'open-needs-called-meld', message: '副露を選んだときは、鳴いた面子（順子・明刻・明槓）が1つ以上必要です。門前を選ぶか面子を直してください。' });
+    }
     if (wait === 'shanpon' && winType === 'ron' && minko === 0) {
         issues.push({ code: 'shanpon-ron-minko', message: 'シャンポン待ちをロンで完成させた刻子は明刻として数えます。その刻子を明刻にしてください。' });
     }
