@@ -124,6 +124,22 @@ test.describe('符の自動計算 #9', () => {
     await expect(page.locator('#mainResult .result-name')).toHaveText('1翻30符');
   });
 
+  test('手動入力で和了形が矛盾したまま役選択へ切り替え、自動計算をオフにすると符が戻る', async ({ page }) => {
+    const warnings = [];
+    page.on('console', message => { if (message.type() === 'warning') warnings.push(message.text()); });
+    await enableAutoFu(page);
+    await setMeld(page, 0, 'minkan');
+    await expect(page.locator('#fuInput')).toHaveValue('');
+    await radio(page, 'inputMode', 'yaku');
+    await selectYaku(page, '立直');
+    await expect(page.locator('#fuYakuInput')).toHaveValue('');
+    await enableAutoFu(page); // オフ
+    await expect(page.locator('#fuYakuInput')).toHaveValue('30');
+    await page.locator('#calculateBtn').click();
+    await expect(page.locator('#mainResult .result-name')).toHaveText('1翻30符');
+    expect(warnings.filter(text => text.includes('Invalid fu value'))).toEqual([]);
+  });
+
   test('5翻以上は符を使わないので、和了形に矛盾があっても計算できる', async ({ page }) => {
     await enableAutoFu(page);
     for (let i = 0; i < 4; i++) await page.locator('[data-target="han"][data-action="increase"]').click();
