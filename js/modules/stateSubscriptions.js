@@ -102,9 +102,12 @@ function updateFuForManualInput(auto, state, stateManager, domElements) {
         }
         setFuButtonsDisabled('fu', true);
     } else if (manualAutoApplied.has(stateManager)) {
-        // 自動計算を切ったら、状態の符を表示に戻す。5翻以上は従来どおり符を使わない。
+        // 自動計算を切ったら、状態の符を今の翻数で補正して表示に戻す（自動計算中は補正を止めていたため、
+        // 1翻へ下げたあとの20符などが残らないようにする）。5翻以上は従来どおり符を使わない。
         manualAutoApplied.delete(stateManager);
-        if (fuInput) fuInput.value = state.currentFu;
+        const fu = validateAndAdjustFu(state.currentHan, state.currentFu, validFuByHan) ?? state.currentFu;
+        if (fu !== state.currentFu) stateManager.setFu(fu);
+        if (fuInput) fuInput.value = fu;
         setFuButtonsDisabled('fu', state.currentHan >= 5);
     }
 }

@@ -111,6 +111,19 @@ test.describe('符の自動計算 #9', () => {
     await expect(page.locator('#mainResult .result-score')).toHaveText('700');
   });
 
+  test('自動計算中に1翻へ下げてからオフにすると、符を1翻の有効な値に直す', async ({ page }) => {
+    await enableAutoFu(page);
+    await page.locator('[data-target="han"][data-action="increase"]').click(); // 2翻
+    await radio(page, 'winType', 'tsumo');
+    await expect(page.locator('#fuInput')).toHaveValue('20');
+    await page.locator('[data-target="han"][data-action="decrease"]').click(); // 1翻
+    await expect(page.locator('#fuCalcIssues')).toContainText('1翻20符の和了はありません。');
+    await enableAutoFu(page); // オフ
+    await expect(page.locator('#fuInput')).toHaveValue('30');
+    await page.locator('#calculateBtn').click();
+    await expect(page.locator('#mainResult .result-name')).toHaveText('1翻30符');
+  });
+
   test('5翻以上は符を使わないので、和了形に矛盾があっても計算できる', async ({ page }) => {
     await enableAutoFu(page);
     for (let i = 0; i < 4; i++) await page.locator('[data-target="han"][data-action="increase"]').click();
