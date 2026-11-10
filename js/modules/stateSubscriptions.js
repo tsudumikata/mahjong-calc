@@ -151,8 +151,10 @@ function synchronizeFuInputs(inputMode, domElements, stateManager) {
             stateManager.setFu(fu);
         } else if (inputMode === 'yaku') {
             // 手動入力モードから役選択モードに切り替える時、符数を同期
-            fuYakuInput.value = fuInput.value;
-            stateManager.setFu(parseInt(fuInput.value));
+            // 符の自動計算で手動入力欄が空（和了形の矛盾）のときは、状態の符を引き継ぐ
+            const fu = parseInt(fuInput.value) || currentState.currentFu;
+            fuYakuInput.value = fu;
+            stateManager.setFu(fu);
         }
     }
 }
