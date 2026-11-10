@@ -52,8 +52,9 @@ export function generateYakuList(yakuDataArray, containerElement) {
  * @param {HTMLElement} mainResultElement - メイン結果表示要素
  * @param {HTMLElement} detailResultElement - 詳細結果表示要素
  * @param {Object|null} doraInfo - 役選択モードのドラ内訳（calculateHanBreakdown の結果+各枚数）
+ * @param {Object|null} fuInfo - 符を自動計算したときの calculateFu の結果（内訳を表示する）
  */
-export function displayResult(result, han, fu, winType, playerType, inputMode = 'manual', selectedYakuSet, yakuDataArray, mainResultElement, detailResultElement, doraInfo = null) {
+export function displayResult(result, han, fu, winType, playerType, inputMode = 'manual', selectedYakuSet, yakuDataArray, mainResultElement, detailResultElement, doraInfo = null, fuInfo = null) {
     const winTypeText = winType === 'ron' ? 'ロン' : 'ツモ';
     const playerTypeText = playerType === 'parent' ? '親' : '子';
     
@@ -91,6 +92,17 @@ export function displayResult(result, han, fu, winType, playerType, inputMode = 
             .join('・');
         const note = doraInfo.isYakuman ? '（役満のため加算なし）' : '';
         appendDetailItem(detailResultElement, `ドラ: ${doraInfo.appliedDoraHan}翻 (${counts})${note}`);
+    }
+
+    // 符を自動計算したときは内訳を表示する（Issue #9）
+    if (fuInfo && fuInfo.breakdown.length > 0) {
+        appendDetailItem(detailResultElement, '符の内訳:');
+        fuInfo.breakdown.forEach(item => {
+            appendDetailItem(detailResultElement, `・${item.label} ${item.fu}符`, 'yaku-detail fu-detail');
+        });
+        const rounded = fuInfo.fu !== fuInfo.rawFu ? ` → ${fuInfo.fu}符` : '';
+        appendDetailItem(detailResultElement, `・合計 ${fuInfo.rawFu}符${rounded}`, 'yaku-detail fu-detail');
+        fuInfo.notes.forEach(note => appendDetailItem(detailResultElement, `・${note.message}`, 'yaku-detail fu-detail'));
     }
     
 }

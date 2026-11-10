@@ -6,7 +6,8 @@
 // 七対子（25符）・平和（ツモ20符／ロン30符）の固定符は、役の選択から決まるため
 // 呼び出し側（stateSubscriptions.js の updateFuForYakuSelection）で優先する。
 
-import { FU_RULES } from '../data/constants.js';
+import { FU_RULES, specialYakuFuRules, validFuByHan } from '../data/constants.js';
+import { getPinfuFu } from './validator.js';
 
 const MELD_LABELS = Object.freeze({
     shuntsu: '順子',
@@ -160,4 +161,46 @@ export function calculateFu(composition, { winType } = {}, rules = FU_RULES) {
     }
 
     return { fu: issues.length ? null : fu, rawFu, breakdown, notes, issues };
+}
+
+/**
+ * 役の選択から符が固定される場合の符（七対子25符、平和ツモ20符・ロン30符）
+ * @param {Set} selectedYaku - 選択された役
+ * @param {string} winType - 'ron' | 'tsumo'
+ * @returns {{ yaku: string, fu: number }|null}
+ */
+export function getFixedYakuFu(selectedYaku, winType, specialRules = specialYakuFuRules) {
+    for (const [yaku, fu] of Object.entries(specialRules)) {
+        if (selectedYaku.has(yaku)) return { yaku, fu };
+    }
+    if (selectedYaku.has('平和')) return { yaku: '平和', fu: getPinfuFu(winType) };
+    return null;
+}
+
+/**
+ * 今の状態で自動計算の符を使うかと、その符を決める
+ * - 自動計算がオフなら使わない（±ボタンの符を使う）
+ * - 役選択モードで七対子・平和を選んでいれば、固定符を優先して使わない
+ * - 5翻以上は符を使わないため使わない（矛盾があっても計算を止めない）
+ * - 和了形の矛盾や、翻数と組み合わせられない符（1翻20符）は issues に入れ、fu は null
+ * @param {Object} state - StateManager の状態
+ * @param {number} han - 今の翻数（手動入力は入力した翻数、役選択は合計翻数。0 は未確定）
+ * @returns {{ active: boolean, fu: number|null, result: Object|null, issues: Array, fixed: Object|null, fuNotUsed: boolean }}
+ */
+export function resolveAutoFu(state, han) {
+    const inactive = { active: false, fu: null, result: null, issues: [], fixed: null, fuNotUsed: false };
+    if (!state.fuAutoEnabled) return inactive;
+    const result = calculateFu(state.fuComposition, { winType: state.winType });
+    const fixed = state.inputMode === 'yaku' ? getFixedYakuFu(state.selectedYaku, state.winType) : null;
+    if (fixed) return { ...inactive, result, fixed };
+    if (han >= 5) return { ...inactive, result, fuNotUsed: true };
+
+    const issues = [...result.issues];
+    if (result.fu !== null && han >= 1 && han <= 4 && !(validFuByHan[han] || []).includes(result.fu)) {
+        const hint = result.fu === 20
+            ? '20符になるのは門前ツモの平和形だけで、平和と門前清自摸和で2翻以上になります。'
+            : '';
+        issues.push({ code: 'fu-han-mismatch', message: `${han}翻${result.fu}符の和了はありません。${hint}翻数か和了形を確認してください。` });
+    }
+    return { active: true, fu: issues.length ? null : result.fu, result, issues, fixed: null, fuNotUsed: false };
 }

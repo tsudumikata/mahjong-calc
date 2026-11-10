@@ -181,6 +181,116 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="fu-calc-section" id="fuCalcSection">
+                        <h2>符の自動計算</h2>
+                        <label class="fu-calc-toggle">
+                            <input type="checkbox" id="fuAutoToggle">
+                            <span class="checkbox-custom"></span>
+                            <span>和了形から符を計算する</span>
+                        </label>
+                        <div class="fu-calc-fields" id="fuCalcFields" hidden>
+                            <p class="yaku-validation-note">幺九牌は1・9・字牌です。シャンポン待ちをロンで完成させた刻子は「明刻」を選んでください。役選択で七対子・平和を選んだときは、その固定符を使います。</p>
+                            <fieldset class="fu-calc-group">
+                                <legend>門前／副露</legend>
+                                <div class="radio-group">
+                                    <label class="radio-label">
+                                        <input type="radio" name="fuMenzen" value="menzen" checked>
+                                        <span class="radio-custom"></span>
+                                        門前
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="fuMenzen" value="open">
+                                        <span class="radio-custom"></span>
+                                        副露
+                                    </label>
+                                </div>
+                            </fieldset>
+                            <div class="fu-calc-row">
+                                <label class="fu-calc-label" for="fuWait">待ち</label>
+                                <select id="fuWait" class="fu-calc-select">
+                                    <option value="ryanmen">両面</option>
+                                    <option value="shanpon">シャンポン</option>
+                                    <option value="kanchan">嵌張</option>
+                                    <option value="penchan">辺張</option>
+                                    <option value="tanki">単騎</option>
+                                </select>
+                            </div>
+                            <div class="fu-calc-row">
+                                <label class="fu-calc-label" for="fuPair">雀頭</label>
+                                <select id="fuPair" class="fu-calc-select">
+                                    <option value="plain">数牌・客風牌</option>
+                                    <option value="yakuhai">役牌（三元牌・自風・場風）</option>
+                                    <option value="doubleWind">連風牌</option>
+                                </select>
+                            </div>
+                            <fieldset class="fu-calc-group">
+                                <legend>面子</legend>
+                                <div class="fu-meld">
+                                    <label class="fu-calc-label" for="fuMeldType0">面子1</label>
+                                    <select id="fuMeldType0" class="fu-calc-select">
+                                        <option value="shuntsu">順子</option>
+                                        <option value="minko">明刻（ポン）</option>
+                                        <option value="anko">暗刻</option>
+                                        <option value="minkan">明槓</option>
+                                        <option value="ankan">暗槓</option>
+                                    </select>
+                                    <label class="fu-meld-terminal">
+                                        <input type="checkbox" id="fuMeldTerminal0">
+                                        <span class="checkbox-custom"></span>
+                                        <span>幺九牌</span>
+                                    </label>
+                                </div>
+                                <div class="fu-meld">
+                                    <label class="fu-calc-label" for="fuMeldType1">面子2</label>
+                                    <select id="fuMeldType1" class="fu-calc-select">
+                                        <option value="shuntsu">順子</option>
+                                        <option value="minko">明刻（ポン）</option>
+                                        <option value="anko">暗刻</option>
+                                        <option value="minkan">明槓</option>
+                                        <option value="ankan">暗槓</option>
+                                    </select>
+                                    <label class="fu-meld-terminal">
+                                        <input type="checkbox" id="fuMeldTerminal1">
+                                        <span class="checkbox-custom"></span>
+                                        <span>幺九牌</span>
+                                    </label>
+                                </div>
+                                <div class="fu-meld">
+                                    <label class="fu-calc-label" for="fuMeldType2">面子3</label>
+                                    <select id="fuMeldType2" class="fu-calc-select">
+                                        <option value="shuntsu">順子</option>
+                                        <option value="minko">明刻（ポン）</option>
+                                        <option value="anko">暗刻</option>
+                                        <option value="minkan">明槓</option>
+                                        <option value="ankan">暗槓</option>
+                                    </select>
+                                    <label class="fu-meld-terminal">
+                                        <input type="checkbox" id="fuMeldTerminal2">
+                                        <span class="checkbox-custom"></span>
+                                        <span>幺九牌</span>
+                                    </label>
+                                </div>
+                                <div class="fu-meld">
+                                    <label class="fu-calc-label" for="fuMeldType3">面子4</label>
+                                    <select id="fuMeldType3" class="fu-calc-select">
+                                        <option value="shuntsu">順子</option>
+                                        <option value="minko">明刻（ポン）</option>
+                                        <option value="anko">暗刻</option>
+                                        <option value="minkan">明槓</option>
+                                        <option value="ankan">暗槓</option>
+                                    </select>
+                                    <label class="fu-meld-terminal">
+                                        <input type="checkbox" id="fuMeldTerminal3">
+                                        <span class="checkbox-custom"></span>
+                                        <span>幺九牌</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+                            <div id="fuCalcIssues" class="yaku-validation-message" role="alert" hidden></div>
+                            <div id="fuCalcResult" class="fu-calc-result" role="status" aria-live="polite" hidden></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="calculate-section">

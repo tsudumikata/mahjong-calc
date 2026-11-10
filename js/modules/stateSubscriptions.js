@@ -5,13 +5,15 @@ import { updateSelectedYakuDisplay } from './display.js';
 import { specialYakuFuRules, validFuByHan } from '../data/constants.js';
 import { validateYakuSelection } from './yakuValidation.js';
 import { clearYakuFeedback, hideCalculationResult, renderYakuValidation } from './yakuSelectionView.js';
+import { resolveAutoFu } from './fuCalculator.js';
+import { renderFuCalcPanel } from './fuCalcPanelView.js';
 
 // メイン購読設定関数
 export function setupStateSubscriptions(stateManager, domElements, yakuData) {
     const subscriptions = [];
 
     // 条件・前提役の解除や一括更新も同じ検証経路へ通す。
-    for (const key of ['selectedYaku', 'inputMode', 'winType', 'playerType', 'doraCount', 'redDoraCount', 'uraDoraCount']) {
+    for (const key of ['selectedYaku', 'inputMode', 'winType', 'playerType', 'doraCount', 'redDoraCount', 'uraDoraCount', 'fuAutoEnabled', 'fuComposition']) {
         subscriptions.push(stateManager.subscribe(key, () => {
             hideCalculationResult(domElements);
             clearYakuFeedback();
@@ -21,6 +23,7 @@ export function setupStateSubscriptions(stateManager, domElements, yakuData) {
                 synchronizeFuInputs(state.inputMode, domElements, stateManager);
             }
             synchronizeYakuState(stateManager, domElements, yakuData);
+            synchronizeFuAuto(stateManager, domElements);
         }));
     }
 
@@ -40,7 +43,10 @@ export function setupStateSubscriptions(stateManager, domElements, yakuData) {
             renderYakuValidation(currentState, validateYakuSelection(currentState.selectedYaku, currentState), domElements);
         })
     );
-    subscriptions.push(stateManager.subscribe('currentHan', () => hideCalculationResult(domElements)));
+    subscriptions.push(stateManager.subscribe('currentHan', () => {
+        hideCalculationResult(domElements);
+        synchronizeFuAuto(stateManager, domElements);
+    }));
 
     // 詳細表示状態の変更を購読
     subscriptions.push(
@@ -50,6 +56,7 @@ export function setupStateSubscriptions(stateManager, domElements, yakuData) {
     );
 
     synchronizeYakuState(stateManager, domElements, yakuData);
+    synchronizeFuAuto(stateManager, domElements);
     return subscriptions;
 }
 
@@ -65,6 +72,48 @@ export function synchronizeYakuState(stateManager, domElements, yakuData) {
     }
     renderYakuValidation(stateManager.getState(), validation, domElements);
     return validation;
+}
+
+/**
+ * 符の自動計算（#9）を今の状態に反映し、パネルを描き直す。計算直前にも呼ぶ。
+ * 役選択モードの符は synchronizeYakuState → updateFuForYakuSelection が優先順位どおりに決める。
+ * @returns {Object} resolveAutoFu の戻り値（active かつ fu が null なら計算を止める）
+ */
+export function synchronizeFuAuto(stateManager, domElements) {
+    const state = stateManager.getState();
+    const han = state.inputMode === 'manual' ? state.currentHan : state.totalHan;
+    const auto = resolveAutoFu(state, han);
+    if (state.inputMode === 'manual') updateFuForManualInput(auto, state, stateManager, domElements);
+    renderFuCalcPanel(stateManager.getState(), auto, domElements);
+    return auto;
+}
+
+// 手動入力で自動計算の符を入れている StateManager。切ったときだけ表示とボタンを戻す。
+const manualAutoApplied = new WeakSet();
+
+// 手動入力モードで自動計算を使うときは、計算した符を入れて±ボタンを止める
+function updateFuForManualInput(auto, state, stateManager, domElements) {
+    const { fuInput } = domElements;
+    if (auto.active) {
+        manualAutoApplied.add(stateManager);
+        if (auto.fu !== null) {
+            if (auto.fu !== state.currentFu) stateManager.setFu(auto.fu);
+            if (fuInput) fuInput.value = auto.fu;
+        }
+        setFuButtonsDisabled('fu', true);
+    } else if (manualAutoApplied.has(stateManager)) {
+        // 自動計算を切ったら、状態の符を表示に戻す。5翻以上は従来どおり符を使わない。
+        manualAutoApplied.delete(stateManager);
+        if (fuInput) fuInput.value = state.currentFu;
+        setFuButtonsDisabled('fu', state.currentHan >= 5);
+    }
+}
+
+function setFuButtonsDisabled(target, disabled) {
+    document.querySelectorAll(`[data-target="${target}"]`).forEach(btn => {
+        btn.disabled = disabled;
+        btn.classList.toggle('disabled', disabled);
+    });
 }
 
 // 入力セクションの表示切り替え
@@ -174,7 +223,15 @@ function updateFuForYakuSelection(currentState, stateManager) {
         return;
     }
     
-    // 3. 通常の符数制限を適用
+    // 3. 符の自動計算（#9）。和了形に矛盾があるときは符を更新しない（計算は eventHandlers で止める）
+    const auto = resolveAutoFu(currentState, currentState.totalHan);
+    if (auto.active) {
+        if (auto.fu !== null) stateManager.setFu(auto.fu);
+        setFuButtonsDisabled('fuYaku', true);
+        return;
+    }
+    
+    // 4. 通常の符数制限を適用
     adjustFuForYakuSelection(currentState.totalHan, currentState, stateManager);
 }
 
