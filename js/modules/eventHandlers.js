@@ -6,7 +6,8 @@ import { calculateScoreResult } from './calculator.js';
 import { displayResult } from './display.js';
 import { validFuByHan, DORA_LIMITS } from '../data/constants.js';
 import { validateYakuSelection, validateYakuAddition } from './yakuValidation.js';
-import { synchronizeYakuState } from './stateSubscriptions.js';
+import { synchronizeYakuState, synchronizeFuAuto } from './stateSubscriptions.js';
+import { resolveAutoFu } from './fuCalculator.js';
 import { clearYakuFeedback, hideCalculationResult, showYakuIssues } from './yakuSelectionView.js';
 import { safeGetElement, safeQuerySelector, safeQuerySelectorAll, safeRun, safeStateOperation, safeAddListener, readIntValue, reportError } from './errorHandler.js';
 
@@ -64,6 +65,10 @@ export class EventHandlers {
                 return; // 特殊役が選択されている場合は符数変更を無効
             }
             
+            // 符を自動計算している間は、計算した符を使う（ボタンも無効化している）
+            const autoHan = target === 'fu' ? readIntValue(this.elements.hanInput, 1) : state.totalHan;
+            if (resolveAutoFu(state, autoHan).active) return;
+            
             // 符数変更時の制限チェック
             let currentHan;
             if (target === 'fu') {
@@ -117,6 +122,9 @@ export class EventHandlers {
     adjustFuForHanChange(newHan) {
         const currentState = this.stateManager.getState();
         
+        // 符を自動計算している間は補正しない。翻数と合わない符は購読側で理由を表示して計算を止める。
+        if (currentState.inputMode === 'manual' && resolveAutoFu(currentState, newHan).active) return;
+
         if (currentState.inputMode === 'manual') {
             // 手動入力モードでの調整
             const currentFu = readIntValue(this.elements.fuInput, 30);
@@ -326,6 +334,37 @@ export class EventHandlers {
         safeQuerySelectorAll('input[name="playerType"]', 'setupEventListeners').forEach(radio => {
             safeAddListener(radio, 'change', (event) => this.handlePlayerTypeChange(event), 'handlePlayerTypeChange');
         });
+
+        this.setupFuCalcListeners();
+    }
+
+    /**
+     * 符を計算するパネル（Issue #9）の入力。変えた項目だけを状態の内訳に反映する。
+     * 符の反映・表示は stateSubscriptions.js の購読者が行う。
+     */
+    setupFuCalcListeners() {
+        safeAddListener(safeGetElement('fuAutoToggle', 'setupFuCalcListeners'), 'change',
+            (event) => this.stateManager.setFuAutoEnabled(event.target.checked), 'handleFuAutoToggle');
+        const update = (patch) => {
+            const composition = this.stateManager.getState().fuComposition;
+            this.stateManager.setFuComposition({ ...composition, ...patch(composition) });
+        };
+        safeQuerySelectorAll('input[name="fuMenzen"]', 'setupFuCalcListeners').forEach(radio => {
+            safeAddListener(radio, 'change', (event) => update(() => ({ menzen: event.target.value === 'menzen' })), 'handleFuMenzen');
+        });
+        for (const [id, field] of [['fuWait', 'wait'], ['fuPair', 'pair']]) {
+            safeAddListener(safeGetElement(id, 'setupFuCalcListeners'), 'change',
+                (event) => update(() => ({ [field]: event.target.value })), `handleFuComposition - ${field}`);
+        }
+        const updateMeld = (index, change) => update(({ melds }) => ({
+            melds: melds.map((meld, i) => (i === index ? { ...meld, ...change } : meld))
+        }));
+        for (let index = 0; index < 4; index++) {
+            safeAddListener(safeGetElement(`fuMeldType${index}`, 'setupFuCalcListeners'), 'change',
+                (event) => updateMeld(index, { type: event.target.value }), 'handleFuMeldType');
+            safeAddListener(safeGetElement(`fuMeldTerminal${index}`, 'setupFuCalcListeners'), 'change',
+                (event) => updateMeld(index, { terminal: event.target.checked }), 'handleFuMeldTerminal');
+        }
     }
 
     /**
@@ -464,6 +503,12 @@ export class EventHandlers {
             const validation = synchronizeYakuState(this.stateManager, this.elements, this.yakuData);
             if (!validation.valid) return;
         }
+        // 符の自動計算（#9）: 和了形の矛盾や翻数と合わない符があれば、理由を表示したまま計算しない
+        const auto = synchronizeFuAuto(this.stateManager, this.elements);
+        if (auto.active && auto.fu === null) {
+            safeGetElement('fuCalcSection', 'runCalculation')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
         // StateManager経由で全状態を取得
         const currentState = this.stateManager.getState();
         let han, fu;
@@ -472,12 +517,12 @@ export class EventHandlers {
         
         if (currentState.inputMode === 'manual') {
             han = readIntValue(this.elements.hanInput, NaN);
-            fu = readIntValue(this.elements.fuInput, NaN);
+            fu = auto.active ? auto.fu : readIntValue(this.elements.fuInput, NaN);
         } else {
             // 役選択モードの場合、選択された役から翻数を計算
             const breakdown = calculateHanBreakdown(currentState.selectedYaku, this.yakuData, currentState);
             han = breakdown.totalHan;
-            fu = readIntValue(this.elements.fuYakuInput, NaN);
+            fu = auto.active ? auto.fu : readIntValue(this.elements.fuYakuInput, NaN);
             yakumanMultiplier = breakdown.yakumanMultiplier;
             doraInfo = {
                 ...breakdown,
@@ -503,7 +548,7 @@ export class EventHandlers {
                 result, han, fu, winType, playerType, 
                 currentState.inputMode, currentState.selectedYaku, 
                 this.yakuData, this.elements.mainResult, this.elements.detailResult,
-                doraInfo
+                doraInfo, auto.active ? auto.result : null
             );
             this.elements.resultSection.style.display = 'block';
             this.elements.resultSection.scrollIntoView({ behavior: 'smooth' });

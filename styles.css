@@ -746,3 +746,125 @@ body {
     font-weight: 500;
     color: #666;
 }
+
+/* 符の自動計算（Issue #9） */
+.fu-calc-section {
+    grid-column: 1 / -1;
+    background: #f8fdf9;
+    border: 1px solid #e8ecf0;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.fu-calc-toggle,
+.fu-meld-terminal {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    cursor: pointer;
+    font-weight: 500;
+    position: relative;
+}
+
+/* 見た目は .checkbox-custom で描き、キーボードでは本物のチェックボックスを操作する */
+.fu-calc-toggle input[type="checkbox"],
+.fu-meld-terminal input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.fu-calc-toggle input[type="checkbox"]:checked + .checkbox-custom,
+.fu-meld-terminal input[type="checkbox"]:checked + .checkbox-custom {
+    background: #1a472a;
+    border-color: #1a472a;
+}
+
+.fu-calc-toggle input[type="checkbox"]:checked + .checkbox-custom::after,
+.fu-meld-terminal input[type="checkbox"]:checked + .checkbox-custom::after {
+    opacity: 1;
+}
+
+.fu-calc-toggle input[type="checkbox"]:focus-visible + .checkbox-custom,
+.fu-meld-terminal input[type="checkbox"]:focus-visible + .checkbox-custom {
+    outline: 2px solid #1a472a;
+    outline-offset: 2px;
+}
+
+.fu-meld-terminal.disabled {
+    color: #aaa;
+    cursor: not-allowed;
+}
+
+.fu-calc-fields {
+    display: grid;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.fu-calc-fields[hidden] {
+    display: none;
+}
+
+.fu-calc-group {
+    border: none;
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+}
+
+.fu-calc-group legend,
+.fu-calc-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a472a;
+    margin-bottom: 4px;
+}
+
+.fu-calc-row,
+.fu-meld {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+}
+
+.fu-calc-row .fu-calc-label,
+.fu-meld .fu-calc-label {
+    min-width: 3.5em;
+    margin-bottom: 0;
+}
+
+.fu-calc-select {
+    min-height: 44px;
+    min-width: 0;
+    max-width: 100%;
+    flex: 1 1 10em;
+    padding: 8px 12px;
+    font-size: 16px; /* iOS Safari がフォーカス時に拡大しない大きさ */
+    border: 2px solid #e8ecf0;
+    border-radius: 8px;
+    background: white;
+    color: #2c3e50;
+}
+
+.fu-calc-select:focus {
+    border-color: #1a472a;
+    outline: none;
+}
+
+.fu-calc-result {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #1a472a;
+    overflow-wrap: anywhere;
+}
+
+.fu-calc-result[hidden] {
+    display: none;
+}
+
+.fu-meld .fu-calc-select {
+    flex-basis: 6em;
+}

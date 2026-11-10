@@ -1,6 +1,28 @@
 // StateManager - リアクティブ状態管理システム
 
-import { DORA_LIMITS } from '../data/constants.js';
+import { DORA_LIMITS, DEFAULT_FU_COMPOSITION } from '../data/constants.js';
+
+// 符計算パネルの入力として受け付ける値（中身の矛盾は fuCalculator.js の calculateFu が判定する）
+const FU_WAITS = new Set(['ryanmen', 'shanpon', 'kanchan', 'penchan', 'tanki']);
+const FU_PAIRS = new Set(['plain', 'yakuhai', 'doubleWind']);
+const FU_MELD_TYPES = new Set(['shuntsu', 'minko', 'anko', 'minkan', 'ankan']);
+
+function isFuComposition(value) {
+    return Boolean(value) && typeof value.menzen === 'boolean'
+        && FU_WAITS.has(value.wait) && FU_PAIRS.has(value.pair)
+        && Array.isArray(value.melds) && value.melds.length === 4
+        && value.melds.every(meld => meld && FU_MELD_TYPES.has(meld.type) && typeof meld.terminal === 'boolean');
+}
+
+// 状態の外から書き換えられないよう、面子まで複製する
+export function cloneFuComposition(composition) {
+    return {
+        menzen: composition.menzen,
+        wait: composition.wait,
+        pair: composition.pair,
+        melds: composition.melds.map(({ type, terminal }) => ({ type, terminal }))
+    };
+}
 
 export class StateManager {
     constructor(initialState = {}) {
@@ -156,6 +178,23 @@ export class StateManager {
         }
     }
 
+    // 符の自動計算（#9）
+    setFuAutoEnabled(enabled) {
+        if (typeof enabled === 'boolean') {
+            this.updateState({ fuAutoEnabled: enabled });
+        } else {
+            console.warn(`StateManager: Invalid fuAutoEnabled value "${enabled}"`);
+        }
+    }
+
+    setFuComposition(composition) {
+        if (isFuComposition(composition)) {
+            this.updateState({ fuComposition: cloneFuComposition(composition) });
+        } else {
+            console.warn('StateManager: Invalid fu composition', composition);
+        }
+    }
+
     // UI状態管理
     setDetailVisible(isVisible) {
         this.updateState({ isDetailVisible: Boolean(isVisible) });
@@ -219,6 +258,10 @@ export function createDefaultState() {
         doraCount: 0,
         redDoraCount: 0,
         uraDoraCount: 0,
+
+        // 符の自動計算（#9）。オフのときは±ボタンで入力した符を使う。
+        fuAutoEnabled: false,
+        fuComposition: cloneFuComposition(DEFAULT_FU_COMPOSITION),
         
         // UI状態
         isDetailVisible: false

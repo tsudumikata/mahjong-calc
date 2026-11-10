@@ -36,6 +36,16 @@ test.describe('ブラウザースモークテスト', () => {
     await expect(page.locator('#mainResult .result-score')).toHaveText('3,900点');
   });
 
+  test('符の自動計算パネルで符を計算して点数を出す（#9）', async ({ page }) => {
+    await page.locator('label.fu-calc-toggle').click();
+    await expect(page.locator('#fuCalcFields')).toBeVisible();
+    await page.locator('#fuMeldType0').selectOption('anko');
+    await page.locator('label:has(#fuMeldTerminal0)').click();
+    await expect(page.locator('#fuInput')).toHaveValue('40');
+    await page.locator('#calculateBtn').click();
+    await expect(page.locator('#mainResult .result-name')).toHaveText('1翻40符');
+  });
+
   test('計算後にリセットして初期値で再計算する', async ({ page }) => {
     await page.locator('[data-target="han"][data-action="increase"]').click();
     await page.locator('[data-target="fu"][data-action="increase"]').click();

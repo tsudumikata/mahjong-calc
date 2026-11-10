@@ -32,7 +32,10 @@
   - シャンポン待ちをロンで完成させた刻子は明刻。どの刻子が和了牌で完成したかは自動で判別せず、利用者に明刻を選んでもらう。
   - 和了形として両立しない入力（門前の明槓、シャンポンロンで明刻なし、順子のない両面待ちなど）は `issues` を返し、符は `null`。呼び出し側は符を更新しない。
   - 七対子25符・平和ツモ20符／ロン30符の固定符は役の選択から決まるため、自動符より優先する。
-  - 画面（符計算パネル）は未対応（#9 の後続 PR）。PR の対象外なら、未対応であることを不具合として指摘しない。
+  - 画面は手動入力・役選択の両方で使える「符の自動計算」パネル。オンのあいだ符の±ボタンを止め、計算した符を符数欄に入れる。オフ（初期値・リセット後）は従来どおり±ボタンの符を使う。
+  - 符の決まり方の優先順位: 役の選択が無効なら符を更新しない → 七対子25符 → 平和20／30符 → 自動計算の符 → ±ボタンの符を `validateAndAdjustFu` で補正。判定は `fuCalculator.js` の `resolveAutoFu` に集約し、役選択は `updateFuForYakuSelection`、手動入力と計算直前は `synchronizeFuAuto`（`stateSubscriptions.js`）から使う。別の経路で自動符を判定する変更は指摘する。
+  - 和了形の矛盾、または翻数と組み合わせられない符（1翻20符）は、黙って補正せずパネルに理由を出し、符数欄を空にして計算を止める。5翻以上は符を使わないので止めない。
+  - 符計算パネルは役の検証（`validateYakuSelection`）と別物。門前限定役と「副露」の矛盾などを役検証に入れる変更は、方針（役の選択だけで確定できる制約に限る）に反するので指摘する。
 
 点数表 `js/data/scoreTable.js` や上記の閾値を変える差分は、親/子 × ロン/ツモの 4 通りすべてについて、標準的な点数表の値と照合してください。
 
@@ -63,7 +66,7 @@
 ## 5. テスト
 
 - 計算・符・満貫の変更には Playwright テスト（`tests/calculation.spec.js`、`tests/mangan.spec.js`、`tests/yaku-fu.spec.js` など）の追加・更新があるか。25符の増減と複数役満は `tests/fu-yakuman.spec.js` と `tests/unit/fu-yakuman.node.mjs` が対象。
-- 符の自動計算の変更には `tests/unit/fu-calculator.node.mjs`（代表的な手と全組み合わせの網羅）の更新があるか。
+- 符の自動計算の変更には `tests/unit/fu-calculator.node.mjs`（代表的な手と全組み合わせの網羅、`resolveAutoFu` の優先順位）と `tests/fu-auto.spec.js` の更新があるか。
 - 役の排他ルールの変更には、Node の単体テスト `tests/unit/yaku-validation.node.mjs` と `tests/yaku-consistency.spec.js` の更新があるか。赤ドラと役の矛盾は `tests/unit/dora.node.mjs`（対象役の棚卸しを独立に列挙）と `tests/dora.spec.js` が対象。役のフィルタ表示は `tests/yaku-filter.spec.js` が対象。
 - CI は Chromium・モバイル Chrome の全テストと WebKit のスモークテスト（`tests/smoke.spec.js`）を実行する。iPhone の Safari に影響しそうな UI 変更で、スモークテストの範囲が足りているか。
 - 固定時間の待機（`waitForTimeout`）を新たに増やすより、状態を待つ書き方を優先する。

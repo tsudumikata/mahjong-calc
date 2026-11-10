@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_FU_COMPOSITION, validFuByHan } from '../../js/data/constants.js';
-import { calculateFu } from '../../js/modules/fuCalculator.js';
+import { calculateFu, getFixedYakuFu, resolveAutoFu } from '../../js/modules/fuCalculator.js';
 
 // 面子の略記: s=順子, m=明刻, a=暗刻, M=明槓, A=暗槓。後ろに9を付けると幺九牌（例: 'a9'）。
 const MELD_TYPES = { s: 'shuntsu', m: 'minko', a: 'anko', M: 'minkan', A: 'ankan' };
@@ -178,4 +178,53 @@ test('#9 全組み合わせで、符は有効な符数の一覧に入り、20符
         }
     }
     assert.ok(valid > 1000, `有効な組み合わせが少なすぎる: ${valid}`);
+});
+
+const autoState = (overrides = {}) => ({
+    fuAutoEnabled: true,
+    fuComposition: DEFAULT_FU_COMPOSITION,
+    inputMode: 'manual',
+    winType: 'ron',
+    selectedYaku: new Set(),
+    ...overrides
+});
+
+test('#9 固定符: 七対子25符を平和より優先し、平和はツモ20符・ロン30符', () => {
+    assert.deepEqual(getFixedYakuFu(new Set(['七対子', '立直']), 'ron'), { yaku: '七対子', fu: 25 });
+    assert.deepEqual(getFixedYakuFu(new Set(['平和']), 'tsumo'), { yaku: '平和', fu: 20 });
+    assert.deepEqual(getFixedYakuFu(new Set(['平和']), 'ron'), { yaku: '平和', fu: 30 });
+    assert.equal(getFixedYakuFu(new Set(['立直']), 'ron'), null);
+});
+
+test('#9 resolveAutoFu: オフなら使わず、オンなら計算した符を使う', () => {
+    assert.equal(resolveAutoFu(autoState({ fuAutoEnabled: false }), 1).active, false);
+    const auto = resolveAutoFu(autoState(), 1);
+    assert.equal(auto.active, true);
+    assert.equal(auto.fu, 30);
+    assert.deepEqual(auto.issues, []);
+});
+
+test('#9 resolveAutoFu: 役選択で七対子・平和を選んでいれば固定符を優先する（手動入力では役を見ない）', () => {
+    const yaku = autoState({ inputMode: 'yaku', selectedYaku: new Set(['七対子']) });
+    const auto = resolveAutoFu(yaku, 2);
+    assert.equal(auto.active, false);
+    assert.deepEqual(auto.fixed, { yaku: '七対子', fu: 25 });
+    assert.equal(resolveAutoFu({ ...yaku, inputMode: 'manual' }, 2).active, true);
+});
+
+test('#9 resolveAutoFu: 5翻以上は符を使わないので、矛盾があっても止めない', () => {
+    const contradictory = { ...DEFAULT_FU_COMPOSITION, melds: [{ type: 'minkan', terminal: false }, ...DEFAULT_FU_COMPOSITION.melds.slice(1)] };
+    assert.equal(resolveAutoFu(autoState({ fuComposition: contradictory }), 4).fu, null);
+    const auto = resolveAutoFu(autoState({ fuComposition: contradictory }), 5);
+    assert.equal(auto.active, false);
+    assert.equal(auto.fuNotUsed, true);
+});
+
+test('#9 resolveAutoFu: 1翻20符は翻数と合わないので止め、2翻なら20符を使う。翻数0（役なし）は判定しない', () => {
+    const tsumo = autoState({ winType: 'tsumo' });
+    const oneHan = resolveAutoFu(tsumo, 1);
+    assert.equal(oneHan.fu, null);
+    assert.deepEqual(oneHan.issues.map(issue => issue.code), ['fu-han-mismatch']);
+    assert.equal(resolveAutoFu(tsumo, 2).fu, 20);
+    assert.equal(resolveAutoFu(tsumo, 0).fu, 20);
 });
