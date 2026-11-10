@@ -22,6 +22,48 @@ export const specialYakuFuRules = {
     "七対子": 25
 };
 
+// 符の自動計算（#9）の加算表。js/modules/fuCalculator.js が使う。
+// 面子の符は [中張牌, 幺九牌] の順。連風牌の雀頭は2符（Mリーグ・最高位戦の規定に合わせる）。
+export const FU_RULES = Object.freeze({
+    base: 20,           // 副底
+    menzenRon: 10,      // 門前加符
+    tsumo: 2,           // ツモ符（平和形のツモは加えない）
+    openPinfuRon: 30,   // 副露で加符のない形（喰い平和形）は30符
+    max: 110,           // 入力できる符の上限
+    meld: Object.freeze({
+        shuntsu: Object.freeze([0, 0]),
+        minko: Object.freeze([2, 4]),
+        anko: Object.freeze([4, 8]),
+        minkan: Object.freeze([8, 16]),
+        ankan: Object.freeze([16, 32])
+    }),
+    pair: Object.freeze({
+        plain: 0,       // 数牌・客風牌
+        yakuhai: 2,     // 三元牌・自風牌・場風牌
+        doubleWind: 2   // 連風牌（自風＝場風）
+    }),
+    wait: Object.freeze({
+        ryanmen: 0,
+        shanpon: 0,
+        kanchan: 2,
+        penchan: 2,
+        tanki: 2
+    })
+});
+
+// 符計算パネルの初期値（門前・両面待ち・数牌の雀頭・順子4つ）。
+export const DEFAULT_FU_COMPOSITION = Object.freeze({
+    menzen: true,
+    wait: 'ryanmen',
+    pair: 'plain',
+    melds: Object.freeze([
+        Object.freeze({ type: 'shuntsu', terminal: false }),
+        Object.freeze({ type: 'shuntsu', terminal: false }),
+        Object.freeze({ type: 'shuntsu', terminal: false }),
+        Object.freeze({ type: 'shuntsu', terminal: false })
+    ])
+});
+
 // ドラ入力の上限。赤ドラは各色の5に1枚ずつ入る一般的な3枚ルール。
 // ドラ・裏ドラは13翻（数え役満）を超える入力を想定しないため13枚までとする。
 export const DORA_LIMITS = Object.freeze({

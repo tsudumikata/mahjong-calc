@@ -26,7 +26,13 @@
     - 5牌を含められる役（対々和・混一色・七対子・大三元・九蓮宝燈など）を赤ドラと排他にする変更、通常ドラ・裏ドラまで一律に禁止する変更は指摘する。
     - UI・フィルタ・計算前ガードのどれかに赤ドラ用の別判定を書く変更は指摘する（すべて `validateYakuSelection` 経由）。
   - 上限はドラ 13・赤ドラ 3・裏ドラ 13（`DORA_LIMITS`）。手動入力モードは翻数を直接入力するためドラ入力の対象外。
-- **未対応の機能:** 符の自動計算（#9）。PR の対象外なら、未対応であることを不具合として指摘しない。
+- **符の自動計算（#9）:** 和了形の内訳（門前／副露・待ち・雀頭・面子4つ）から符を求める。牌姿（14枚）の入力や面子分解は行わない。計算は `js/modules/fuCalculator.js` の `calculateFu`、加算表は `constants.js` の `FU_RULES` だけで管理する。
+  - 副底20、門前ロン+10、ツモ+2（平和形のツモは加えない）。面子は明刻2/4・暗刻4/8・明槓8/16・暗槓16/32（中張牌/幺九牌）。雀頭は役牌+2、**連風牌も+2**（Mリーグ・最高位戦と同じ。4符にする変更は仕様変更として扱う）。待ちは嵌張・辺張・単騎+2。
+  - 合計は10符単位に切り上げ。副露で加符のない形（喰い平和形）のロンは30符。上限は110符。
+  - シャンポン待ちをロンで完成させた刻子は明刻。どの刻子が和了牌で完成したかは自動で判別せず、利用者に明刻を選んでもらう。
+  - 和了形として両立しない入力（門前の明槓、シャンポンロンで明刻なし、順子のない両面待ちなど）は `issues` を返し、符は `null`。呼び出し側は符を更新しない。
+  - 七対子25符・平和ツモ20符／ロン30符の固定符は役の選択から決まるため、自動符より優先する。
+  - 画面（符計算パネル）は未対応（#9 の後続 PR）。PR の対象外なら、未対応であることを不具合として指摘しない。
 
 点数表 `js/data/scoreTable.js` や上記の閾値を変える差分は、親/子 × ロン/ツモの 4 通りすべてについて、標準的な点数表の値と照合してください。
 
@@ -42,7 +48,7 @@
 
 ## 3. 設計方針
 
-- `js/modules/calculator.js` と `validator.js` は副作用のない純粋関数。DOM や状態への依存を持ち込む変更は指摘する。
+- `js/modules/calculator.js`・`validator.js`・`fuCalculator.js` は副作用のない純粋関数。DOM や状態への依存を持ち込む変更は指摘する。
 - 状態は `StateManager`（`js/modules/stateManager.js`）が持ち、UI 更新は `stateSubscriptions.js` の購読で行う。DOM の値を正として直接読み書きする処理を新たに増やす変更は指摘する。
 - ビルド工程はなく、素の ES Modules を `npm run serve`（http）で配信する。`file://` での起動は非対応。
 
@@ -57,6 +63,7 @@
 ## 5. テスト
 
 - 計算・符・満貫の変更には Playwright テスト（`tests/calculation.spec.js`、`tests/mangan.spec.js`、`tests/yaku-fu.spec.js` など）の追加・更新があるか。25符の増減と複数役満は `tests/fu-yakuman.spec.js` と `tests/unit/fu-yakuman.node.mjs` が対象。
+- 符の自動計算の変更には `tests/unit/fu-calculator.node.mjs`（代表的な手と全組み合わせの網羅）の更新があるか。
 - 役の排他ルールの変更には、Node の単体テスト `tests/unit/yaku-validation.node.mjs` と `tests/yaku-consistency.spec.js` の更新があるか。赤ドラと役の矛盾は `tests/unit/dora.node.mjs`（対象役の棚卸しを独立に列挙）と `tests/dora.spec.js` が対象。役のフィルタ表示は `tests/yaku-filter.spec.js` が対象。
 - CI は Chromium・モバイル Chrome の全テストと WebKit のスモークテスト（`tests/smoke.spec.js`）を実行する。iPhone の Safari に影響しそうな UI 変更で、スモークテストの範囲が足りているか。
 - 固定時間の待機（`waitForTimeout`）を新たに増やすより、状態を待つ書き方を優先する。
