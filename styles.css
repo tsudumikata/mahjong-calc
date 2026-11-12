@@ -741,6 +741,14 @@ body {
     text-align: center;
 }
 
+/* 門前／副露（Issue #49） */
+.menzen-note {
+    margin-top: 8px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: #555;
+}
+
 .heading-note {
     font-size: 0.75em;
     font-weight: 500;

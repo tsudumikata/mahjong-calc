@@ -1,21 +1,26 @@
 // 麻雀役データ定義
+// openHan: 副露したときの翻数（喰い下がり、Issue #49）。無い役は副露しても翻数が変わらない。
+// menzenOnly: 門前でのみ成立する役。副露では役検証（yakuValidation.js の menzen-only）で選べない。
 export const yakuData = [
     {
         name: "立直",
         han: 1,
-        hanText: "1翻",
+        menzenOnly: true,
+        hanText: "1翻（門前限定）",
         description: "門前でリーチを宣言して和了"
     },
     {
         name: "一発",
         han: 1,
-        hanText: "1翻",
+        menzenOnly: true,
+        hanText: "1翻（門前限定）",
         description: "リーチ後、一巡以内に和了（鳴きが入ると無効）"
     },
     {
         name: "門前清自摸和",
         han: 1,
-        hanText: "1翻",
+        menzenOnly: true,
+        hanText: "1翻（門前限定）",
         description: "門前でツモ和了"
     },
     {
@@ -27,13 +32,15 @@ export const yakuData = [
     {
         name: "平和",
         han: 1,
-        hanText: "1翻",
+        menzenOnly: true,
+        hanText: "1翻（門前限定）",
         description: "門前で、4面子が全て順子、雀頭が役牌以外、待ちが両面"
     },
     {
         name: "一盃口",
         han: 1,
-        hanText: "1翻",
+        menzenOnly: true,
+        hanText: "1翻（門前限定）",
         description: "門前で、同じ順子を2組作る"
     },
     {
@@ -69,31 +76,36 @@ export const yakuData = [
     {
         name: "ダブル立直",
         han: 2,
-        hanText: "2翻",
+        menzenOnly: true,
+        hanText: "2翻（門前限定）",
         description: "配牌時に天聴でリーチ"
     },
     {
         name: "七対子",
         han: 2,
-        hanText: "2翻",
+        menzenOnly: true,
+        hanText: "2翻（門前限定）",
         description: "7種類の対子で和了"
     },
     {
         name: "混全帯幺九",
         han: 2,
-        hanText: "2翻",
+        openHan: 1,
+        hanText: "2翻（副露1翻）",
         description: "全ての面子と雀頭に幺九牌が含まれる"
     },
     {
         name: "一気通貫",
         han: 2,
-        hanText: "2翻",
+        openHan: 1,
+        hanText: "2翻（副露1翻）",
         description: "同種の数牌で123・456・789の順子を作る"
     },
     {
         name: "三色同順",
         han: 2,
-        hanText: "2翻",
+        openHan: 1,
+        hanText: "2翻（副露1翻）",
         description: "3種の数牌で同じ順子を作る"
     },
     {
@@ -135,37 +147,43 @@ export const yakuData = [
     {
         name: "二盃口",
         han: 3,
-        hanText: "3翻",
+        menzenOnly: true,
+        hanText: "3翻（門前限定）",
         description: "門前で、同じ順子を2組×2作る"
     },
     {
         name: "純全帯幺九",
         han: 3,
-        hanText: "3翻",
+        openHan: 2,
+        hanText: "3翻（副露2翻）",
         description: "全ての面子と雀頭に幺九牌が含まれ、字牌を使わない"
     },
     {
         name: "混一色",
         han: 3,
-        hanText: "3翻",
+        openHan: 2,
+        hanText: "3翻（副露2翻）",
         description: "1種の数牌と字牌のみで和了"
     },
     {
         name: "清一色",
         han: 6,
-        hanText: "6翻",
+        openHan: 5,
+        hanText: "6翻（副露5翻）",
         description: "1種の数牌のみで和了"
     },
     {
         name: "国士無双",
         han: 13,
-        hanText: "役満",
+        menzenOnly: true,
+        hanText: "役満（門前限定）",
         description: "13種の幺九牌を1枚ずつ+1種の幺九牌をもう1枚"
     },
     {
         name: "四暗刻",
         han: 13,
-        hanText: "役満",
+        menzenOnly: true,
+        hanText: "役満（門前限定）",
         description: "暗刻を4組作る"
     },
     {
@@ -207,7 +225,8 @@ export const yakuData = [
     {
         name: "九蓮宝燈",
         han: 13,
-        hanText: "役満",
+        menzenOnly: true,
+        hanText: "役満（門前限定）",
         description: "門前で1種の数牌による特定の形"
     },
     {
@@ -219,13 +238,15 @@ export const yakuData = [
     {
         name: "天和",
         han: 13,
-        hanText: "役満",
+        menzenOnly: true,
+        hanText: "役満（門前限定）",
         description: "親の配牌で和了"
     },
     {
         name: "地和",
         han: 13,
-        hanText: "役満",
+        menzenOnly: true,
+        hanText: "役満（門前限定）",
         description: "子の第一ツモで和了"
     }
 ];

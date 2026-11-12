@@ -63,7 +63,7 @@ test.describe('符の自動計算 #9', () => {
     await expect(page.locator('#detailResult')).toContainText('・合計 40符');
 
     // 入力を変えたら古い結果を隠す
-    await radio(page, 'fuMenzen', 'open');
+    await radio(page, 'menzen', 'open');
     await expect(page.locator('#resultSection')).toBeHidden();
     await expect(page.locator('#fuInput')).toHaveValue('30');
     await expect(page.locator('#fuCalcResult')).toContainText('＝ 30符');
@@ -71,11 +71,11 @@ test.describe('符の自動計算 #9', () => {
 
   test('副露ロンで加符がない形は30符、32符は40符に切り上げる', async ({ page }) => {
     await enableAutoFu(page);
-    await radio(page, 'fuMenzen', 'open');
+    await radio(page, 'menzen', 'open');
     await expect(page.locator('#fuInput')).toHaveValue('30');
     await expect(page.locator('#fuCalcResult')).toContainText('副露で加符のない形は30符として扱います。');
 
-    await radio(page, 'fuMenzen', 'menzen');
+    await radio(page, 'menzen', 'menzen');
     await page.locator('#fuWait').selectOption('kanchan');
     await expect(page.locator('#fuCalcResult')).toContainText('＝ 32符 → 40符');
     await expect(page.locator('#fuInput')).toHaveValue('40');
@@ -90,7 +90,7 @@ test.describe('符の自動計算 #9', () => {
     await page.locator('#calculateBtn').click();
     await expect(page.locator('#resultSection')).toBeHidden();
 
-    await radio(page, 'fuMenzen', 'open');
+    await radio(page, 'menzen', 'open');
     await expect(page.locator('#fuCalcIssues')).toBeHidden();
     await expect(page.locator('#fuInput')).toHaveValue('30'); // 20 + 明槓（中張）8 = 28 → 30
     await page.locator('#calculateBtn').click();

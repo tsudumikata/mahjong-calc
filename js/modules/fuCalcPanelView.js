@@ -26,7 +26,8 @@ export function formatFuFormula(result) {
 }
 
 function syncControls(composition) {
-    document.querySelectorAll('input[name="fuMenzen"]').forEach(radio => {
+    // 門前／副露は入力欄の上部にある共通の選択（Issue #49）。符の内訳と同じ値を表示する。
+    document.querySelectorAll('input[name="menzen"]').forEach(radio => {
         radio.checked = (radio.value === 'menzen') === composition.menzen;
     });
     const wait = document.getElementById('fuWait');

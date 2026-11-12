@@ -335,6 +335,11 @@ export class EventHandlers {
             safeAddListener(radio, 'change', (event) => this.handlePlayerTypeChange(event), 'handlePlayerTypeChange');
         });
 
+        // 門前／副露（Issue #49）。役の喰い下がり・門前限定役と符の自動計算で共有する。
+        safeQuerySelectorAll('input[name="menzen"]', 'setupEventListeners').forEach(radio => {
+            safeAddListener(radio, 'change', (event) => this.stateManager.setMenzen(event.target.value === 'menzen'), 'handleMenzenChange');
+        });
+
         this.setupFuCalcListeners();
     }
 
@@ -349,9 +354,6 @@ export class EventHandlers {
             const composition = this.stateManager.getState().fuComposition;
             this.stateManager.setFuComposition({ ...composition, ...patch(composition) });
         };
-        safeQuerySelectorAll('input[name="fuMenzen"]', 'setupFuCalcListeners').forEach(radio => {
-            safeAddListener(radio, 'change', (event) => update(() => ({ menzen: event.target.value === 'menzen' })), 'handleFuMenzen');
-        });
         for (const [id, field] of [['fuWait', 'wait'], ['fuPair', 'pair']]) {
             safeAddListener(safeGetElement(id, 'setupFuCalcListeners'), 'change',
                 (event) => update(() => ({ [field]: event.target.value })), `handleFuComposition - ${field}`);
@@ -435,6 +437,10 @@ export class EventHandlers {
         // 親子を「親」に戻す
         const parentRadio = safeQuerySelector('input[name="playerType"][value="parent"]', 'resetFormElements');
         if (parentRadio) parentRadio.checked = true;
+        
+        // 門前／副露を「門前」に戻す
+        const menzenRadio = safeQuerySelector('input[name="menzen"][value="menzen"]', 'resetFormElements');
+        if (menzenRadio) menzenRadio.checked = true;
         
         // 翻数を1に戻す
         if (this.elements.hanInput) this.elements.hanInput.value = '1';

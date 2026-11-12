@@ -35,17 +35,22 @@
   - 画面は手動入力・役選択の両方で使える「符の自動計算」パネル。オンのあいだ符の±ボタンを止め、計算した符を符数欄に入れる。オフ（初期値・リセット後）は従来どおり±ボタンの符を使う。
   - 符の決まり方の優先順位: 役の選択が無効なら符を更新しない → 七対子25符 → 平和20／30符 → 自動計算の符 → ±ボタンの符を `validateAndAdjustFu` で補正。判定は `fuCalculator.js` の `resolveAutoFu` に集約し、役選択は `updateFuForYakuSelection`、手動入力と計算直前は `synchronizeFuAuto`（`stateSubscriptions.js`）から使う。別の経路で自動符を判定する変更は指摘する。
   - 和了形の矛盾、または翻数と組み合わせられない符（1翻20符）は、黙って補正せずパネルに理由を出し、符数欄を空にして計算を止める。5翻以上は符を使わないので止めない。
-  - 符計算パネルは役の検証（`validateYakuSelection`）と別物。門前限定役と「副露」の矛盾などを役検証に入れる変更は、方針（役の選択だけで確定できる制約に限る）に反するので指摘する。
+  - 門前／副露は入力欄上部の共通の選択（`input[name="menzen"]`、状態の `menzen`）で、符計算パネルに別の選択は持たない。`StateManager` の `setMenzen` / `setFuComposition` が `menzen` と `fuComposition.menzen` を同じ更新で揃える（#49）。片方だけを書き換える変更は指摘する。
+  - 符計算パネルの面子の内訳（明刻・明槓の有無など）から役の検証を行う変更は指摘する。役検証が見るのは門前／副露の選択だけ。
+- **喰い下がり・門前限定役（#49）:** 役選択モードで副露なら、喰い下がりを適用し、門前限定役を選べなくする。手動入力モードは翻数を直接入力するため対象外。
+  - 副露時の翻数は `yakuData.js` の `openHan` だけで管理する: 混全帯幺九・一気通貫・三色同順 2→1翻、純全帯幺九・混一色 3→2翻、清一色 6→5翻。翻数は `validator.js` の `getYakuHan` → `calculateTotalHan`（第3引数 `menzen`）→ `calculateHanBreakdown`（状態の `menzen`）で求める。役満は喰い下がりしない。ドラは喰い下がり後の翻数に足す。
+  - 門前限定役は `yakuData.js` の `menzenOnly` だけで管理する: 立直・ダブル立直・一発・門前清自摸和・平和・一盃口・二盃口・七対子・国士無双・四暗刻・九蓮宝燈・天和・地和。副露でこれらを選ぶと `validateYakuSelection` が `menzen-only`（和了条件）を返し、フィルタ表示・選択の拒否・計算前ガードはすべてこの判定を使う。選択済みのまま副露にした場合も黙って解除せず、理由を表示して計算を止める。
+  - 副露で20符・25符になる和了はないが、±ボタンの符はまだ門前／副露で絞っていない（範囲外）。
 
 点数表 `js/data/scoreTable.js` や上記の閾値を変える差分は、親/子 × ロン/ツモの 4 通りすべてについて、標準的な点数表の値と照合してください。
 
 ## 2. 役の排他・複合ルール
 
 - 役の組み合わせの検証は `js/modules/yakuValidation.js` の `validateYakuSelection` に一本化されている。UI 表示と計算直前の両方が `synchronizeYakuState` 経由でこれを使う。片方だけ別の判定を書く変更は、表示と計算結果の食い違いを生む（過去の不具合の原因）ので指摘する。
-- 検証は「役の選択だけで確定できる制約」に限る方針。牌姿の成立判定・食い下がり・符計算は行わない。この範囲外の判定を求める指摘はしない。
+- 検証は「役の選択と和了条件（ロン/ツモ・親子・門前/副露・ドラ枚数）だけで確定できる制約」に限る方針。牌姿の成立判定・符計算は行わない。喰い下がりの翻数は検証ではなく `getYakuHan` の責務。この範囲外の判定を求める指摘はしない。
 - 役を追加・変更する場合は、`js/data/yakuData.js`、`yakuValidation.js` の排他ルール（`kokushiCompatible` などの許可リストを含む）、ルール根拠のコメントがそろって更新されているかを確認する。
 - 役満と通常役の物理的に可能な複合は許可する方針。
-- **役のフィルタ（#6）:** 役選択モードで、今の選択・和了条件（ロン/ツモ、親/子、裏ドラ、赤ドラ）に追加すると検証に失敗する役を薄く表示する（`yaku-unavailable` クラス）。判定は `yakuValidation.js` の `getUnavailableYaku` で、役を押したときの拒否（`eventHandlers.js` の `handleYakuSelection`）と同じ `validateYakuAddition` を使う。フィルタ用に別の排他判定を書く変更は指摘する。
+- **役のフィルタ（#6）:** 役選択モードで、今の選択・和了条件（ロン/ツモ、親/子、門前/副露、裏ドラ、赤ドラ）に追加すると検証に失敗する役を薄く表示する（`yaku-unavailable` クラス）。判定は `yakuValidation.js` の `getUnavailableYaku` で、役を押したときの拒否（`eventHandlers.js` の `handleYakuSelection`）と同じ `validateYakuAddition` を使う。フィルタ用に別の排他判定を書く変更は指摘する。
   - 薄く表示した役も押せる。押すと選択せずに理由を表示する。`disabled` や `aria-disabled` で押せなくする変更は、理由が分からなくなるので指摘する（支援技術向けには `aria-describedby` で説明を関連付ける）。
   - 選択済みの役は薄くしない（解除は常に許可）。選択が既に無効なときは、無効を解消できる役（例: 裏ドラが残っているときの立直）だけが濃く残る。
 
@@ -67,6 +72,7 @@
 
 - 計算・符・満貫の変更には Playwright テスト（`tests/calculation.spec.js`、`tests/mangan.spec.js`、`tests/yaku-fu.spec.js` など）の追加・更新があるか。25符の増減と複数役満は `tests/fu-yakuman.spec.js` と `tests/unit/fu-yakuman.node.mjs` が対象。
 - 符の自動計算の変更には `tests/unit/fu-calculator.node.mjs`（代表的な手と全組み合わせの網羅、`resolveAutoFu` の優先順位）と `tests/fu-auto.spec.js` の更新があるか。
+- 喰い下がり・門前限定役の変更には `tests/unit/kuisagari.node.mjs`（対象役の棚卸しを独立に列挙）と `tests/kuisagari.spec.js` の更新があるか。
 - 役の排他ルールの変更には、Node の単体テスト `tests/unit/yaku-validation.node.mjs` と `tests/yaku-consistency.spec.js` の更新があるか。赤ドラと役の矛盾は `tests/unit/dora.node.mjs`（対象役の棚卸しを独立に列挙）と `tests/dora.spec.js` が対象。役のフィルタ表示は `tests/yaku-filter.spec.js` が対象。
 - CI は Chromium・モバイル Chrome の全テストと WebKit のスモークテスト（`tests/smoke.spec.js`）を実行する。iPhone の Safari に影響しそうな UI 変更で、スモークテストの範囲が足りているか。
 - 固定時間の待機（`waitForTimeout`）を新たに増やすより、状態を待つ書き方を優先する。

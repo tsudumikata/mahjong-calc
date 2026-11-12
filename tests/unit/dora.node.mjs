@@ -17,7 +17,7 @@ test('ドラ・赤ドラ・裏ドラの枚数を合計する', () => {
 
 test('役の翻数にドラを加算する', () => {
     const result = calculateHanBreakdown(yaku(['立直', '断幺九']), yakuData, dora(1, 1, 1));
-    assert.deepEqual(result, { yakuHan: 2, doraHan: 3, appliedDoraHan: 3, totalHan: 5, isYakuman: false, yakumanMultiplier: 1 });
+    assert.deepEqual(result, { yakuHan: 2, doraHan: 3, appliedDoraHan: 3, totalHan: 5, isYakuman: false, yakumanMultiplier: 1, menzen: true });
 });
 
 test('ドラだけでは役にならず0翻のまま', () => {

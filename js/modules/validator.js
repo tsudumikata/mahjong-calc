@@ -2,12 +2,25 @@
 // グローバル状態を引数で受け取る純粋関数群
 
 /**
+ * 門前／副露に応じた役の翻数（Issue #49）
+ * 副露なら喰い下がり（yakuData の openHan）を使う。門前限定役を副露で選ぶ矛盾は
+ * yakuValidation.js の menzen-only が判定し、ここでは翻数を変えない。
+ * @param {Object} yaku - 役データ
+ * @param {boolean} menzen - 門前なら true、副露なら false
+ * @returns {number}
+ */
+export function getYakuHan(yaku, menzen = true) {
+    return !menzen && Number.isInteger(yaku.openHan) ? yaku.openHan : yaku.han;
+}
+
+/**
  * 選択された役から合計翻数を計算
  * @param {Set} selectedYakuSet - 選択された役のSet
  * @param {Array} yakuDataArray - 役データ配列
+ * @param {boolean} menzen - 門前なら true、副露なら false（副露は喰い下がりを適用）
  * @returns {number} 合計翻数（役満の場合は役満の数に関わらず13。倍率は countYakuman）
  */
-export function calculateTotalHan(selectedYakuSet, yakuDataArray) {
+export function calculateTotalHan(selectedYakuSet, yakuDataArray, menzen = true) {
     let total = 0;
     let hasYakuman = false;
     
@@ -17,7 +30,7 @@ export function calculateTotalHan(selectedYakuSet, yakuDataArray) {
             if (yaku.han >= 13) {
                 hasYakuman = true;
             } else {
-                total += yaku.han;
+                total += getYakuHan(yaku, menzen);
             }
         }
     });
@@ -66,20 +79,22 @@ export function calculateDoraHan({ doraCount = 0, redDoraCount = 0, uraDoraCount
  * - 役満にはドラを加算しない
  * - 通常役+ドラが13翻以上なら数え役満として getScoreFromTable が扱う（倍率は1のまま）
  * - yakumanMultiplier は選択した役満の数。数え役満や通常役では1
+ * - 副露（menzen: false）なら喰い下がりを適用する（Issue #49）。省略時は門前
  * @param {Set} selectedYakuSet - 選択された役のSet
  * @param {Array} yakuDataArray - 役データ配列
- * @param {Object} doraState - { doraCount, redDoraCount, uraDoraCount }
- * @returns {{ yakuHan: number, doraHan: number, appliedDoraHan: number, totalHan: number, isYakuman: boolean, yakumanMultiplier: number }}
+ * @param {Object} doraState - { doraCount, redDoraCount, uraDoraCount, menzen }（StateManager の状態をそのまま渡せる）
+ * @returns {{ yakuHan: number, doraHan: number, appliedDoraHan: number, totalHan: number, isYakuman: boolean, yakumanMultiplier: number, menzen: boolean }}
  */
 export function calculateHanBreakdown(selectedYakuSet, yakuDataArray, doraState = {}) {
-    const yakuHan = calculateTotalHan(selectedYakuSet, yakuDataArray);
+    const menzen = doraState.menzen !== false;
+    const yakuHan = calculateTotalHan(selectedYakuSet, yakuDataArray, menzen);
     const doraHan = calculateDoraHan(doraState);
     const yakumanCount = countYakuman(selectedYakuSet, yakuDataArray);
     const isYakuman = yakumanCount > 0;
     const appliedDoraHan = (yakuHan === 0 || isYakuman) ? 0 : doraHan;
     return {
         yakuHan, doraHan, appliedDoraHan, totalHan: yakuHan + appliedDoraHan, isYakuman,
-        yakumanMultiplier: Math.max(1, yakumanCount)
+        yakumanMultiplier: Math.max(1, yakumanCount), menzen
     };
 }
 
@@ -87,7 +102,7 @@ export function calculateHanBreakdown(selectedYakuSet, yakuDataArray, doraState 
  * 役とドラを合わせた合計翻数
  * @param {Set} selectedYakuSet - 選択された役のSet
  * @param {Array} yakuDataArray - 役データ配列
- * @param {Object} doraState - { doraCount, redDoraCount, uraDoraCount }
+ * @param {Object} doraState - { doraCount, redDoraCount, uraDoraCount, menzen }
  * @returns {number}
  */
 export function calculateTotalHanWithDora(selectedYakuSet, yakuDataArray, doraState = {}) {

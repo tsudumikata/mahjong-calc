@@ -1,6 +1,7 @@
 import { yakuData } from '../data/yakuData.js';
 
-// 役の選択だけで確定できる制約。牌姿の成立判定・食い下がり・符計算は行わない。
+// 役の選択と和了条件（ロン/ツモ・親子・門前/副露・ドラ枚数）だけで確定できる制約。
+// 牌姿の成立判定・符計算は行わない。喰い下がりの翻数は validator.js の getYakuHan の責務（Issue #49）。
 // 定義の確認元（これらの競技規定全体を採用ルールに変更するものではない）:
 // https://www.nihon-majan.org/ritimajyanyakuitiran.html
 // https://saikouisen.com/pdf/saikouisen_regulation.pdf 第47〜48条
@@ -119,9 +120,9 @@ export const redDoraIncompatibleYaku = Object.freeze({
 
 // 全38役を監査対象として明示。新しい役を追加したら単体テストが棚卸し漏れを検出する。
 export const yakuValidationAudit = Object.freeze({
-    '立直': '上位役との重複・最初のツモ役との時間的矛盾。門前の実態は未判定。',
+    '立直': '上位役との重複・最初のツモ役との時間的矛盾。門前限定（副露では選べない）。',
     '一発': '立直前提・槓/最初のツモ役との矛盾。槍槓は許可、鳴き履歴は未判定。',
-    '門前清自摸和': 'ツモ条件。門前の実態は未判定。',
+    '門前清自摸和': 'ツモ条件。門前限定（副露では選べない）。',
     '断幺九': '幺九牌・字牌必須役と矛盾。',
     '平和': '四順子・刻子なし。雀頭の役牌/両面待ちの実態は未判定。',
     '一盃口': '二順子・上位役/七対子との同時計上。',
@@ -165,7 +166,10 @@ export const yakuConflictRules = Object.freeze(rules.filter((rule, index) =>
 ).map(rule => Object.freeze({ ...rule, yaku: Object.freeze(rule.yaku) })));
 
 /** 副作用なし。選択済み役と和了条件だけで確定する問題をすべて返す。 */
-export function validateYakuSelection(selectedYaku, { winType = 'ron', playerType = 'parent', uraDoraCount = 0, redDoraCount = 0 } = {}) {
+// 門前でのみ成立する役（Issue #49）。一覧は yakuData の menzenOnly だけで管理する。
+export const menzenOnlyYaku = Object.freeze(yakuData.filter(yaku => yaku.menzenOnly).map(yaku => yaku.name));
+
+export function validateYakuSelection(selectedYaku, { winType = 'ron', playerType = 'parent', uraDoraCount = 0, redDoraCount = 0, menzen = true } = {}) {
     const selected = new Set(selectedYaku);
     const issues = [];
     const add = (code, type, yaku, message) => issues.push({ code, type, yaku, message });
@@ -197,6 +201,14 @@ export function validateYakuSelection(selectedYaku, { winType = 'ron', playerTyp
         for (const name of names) {
             if (selected.has(name) && winType !== method) {
                 add('win-type', 'condition', [name], `${name}は${method === 'tsumo' ? 'ツモ' : 'ロン'}でのみ成立します。和了方法を変更するか、役を解除してください。`);
+            }
+        }
+    }
+    // 副露は門前／副露の選択で決まる和了条件。符計算パネルの面子の内訳は見ない。
+    if (menzen === false) {
+        for (const name of menzenOnlyYaku) {
+            if (selected.has(name)) {
+                add('menzen-only', 'condition', [name], `${name}は門前でのみ成立します。門前／副露を「門前」にするか、役を解除してください。`);
             }
         }
     }

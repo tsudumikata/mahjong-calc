@@ -187,9 +187,19 @@ export class StateManager {
         }
     }
 
+    // 門前／副露（Issue #49）。役の翻数（喰い下がり・門前限定役）と符の自動計算の両方が使うため、
+    // menzen と fuComposition.menzen を同じ更新で書き換え、食い違いを残さない。
+    setMenzen(menzen) {
+        if (typeof menzen === 'boolean') {
+            this.updateState({ menzen, fuComposition: { ...cloneFuComposition(this.state.fuComposition), menzen } });
+        } else {
+            console.warn(`StateManager: Invalid menzen value "${menzen}"`);
+        }
+    }
+
     setFuComposition(composition) {
         if (isFuComposition(composition)) {
-            this.updateState({ fuComposition: cloneFuComposition(composition) });
+            this.updateState({ menzen: composition.menzen, fuComposition: cloneFuComposition(composition) });
         } else {
             console.warn('StateManager: Invalid fu composition', composition);
         }
@@ -258,6 +268,10 @@ export function createDefaultState() {
         doraCount: 0,
         redDoraCount: 0,
         uraDoraCount: 0,
+
+        // 門前／副露（#49）。副露なら役の喰い下がりを適用し、門前限定役を選べなくする。
+        // fuComposition.menzen と常に同じ値（setMenzen / setFuComposition が揃える）。
+        menzen: DEFAULT_FU_COMPOSITION.menzen,
 
         // 符の自動計算（#9）。オフのときは±ボタンで入力した符を使う。
         fuAutoEnabled: false,
