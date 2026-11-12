@@ -70,6 +70,23 @@
                         </div>
                     </div>
 
+                    <div class="menzen-section">
+                        <h2>門前／副露</h2>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="menzen" value="menzen" checked>
+                                <span class="radio-custom"></span>
+                                門前
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="menzen" value="open">
+                                <span class="radio-custom"></span>
+                                副露
+                            </label>
+                        </div>
+                        <p class="menzen-note">役選択では副露なら喰い下がりを適用し、門前限定役を選べなくします。符の自動計算でも使います。</p>
+                    </div>
+
                     <div class="manual-input-section">
                         <div class="han-section">
                             <h2>翻数<span class="heading-note">（ドラ込み）</span></h2>
@@ -93,7 +110,7 @@
                     <div class="yaku-input-section" style="display: none;">
                         <div class="yaku-selection">
                             <h2>役選択</h2>
-                            <p class="yaku-validation-note">選択した役と和了条件の矛盾を確認します。手牌・門前／副露・巡目や槓の履歴は判定できないため、各役の成立条件は別途確認してください。今の選択に組み合わせられない役は薄く表示します（押すと理由を表示します）。</p>
+                            <p class="yaku-validation-note">選択した役と和了条件の矛盾を確認します。手牌・巡目や槓の履歴は判定できないため、各役の成立条件は別途確認してください。今の選択に組み合わせられない役は薄く表示します（押すと理由を表示します）。</p>
                             <span id="yakuUnavailableHint" hidden>今の選択には追加できない役です。選ぶと理由を表示します。</span>
                             <div id="yakuValidationFeedback" class="yaku-validation-message" role="status" aria-live="polite" hidden></div>
                             <div id="yakuValidationErrors" class="yaku-validation-message" role="alert" hidden></div>
@@ -190,22 +207,7 @@
                             <span>和了形から符を計算する</span>
                         </label>
                         <div class="fu-calc-fields" id="fuCalcFields" hidden>
-                            <p class="yaku-validation-note">幺九牌は1・9・字牌です。シャンポン待ちをロンで完成させた刻子は「明刻」を選んでください。役選択で七対子・平和を選んだときは、その固定符を使います。</p>
-                            <fieldset class="fu-calc-group">
-                                <legend>門前／副露</legend>
-                                <div class="radio-group">
-                                    <label class="radio-label">
-                                        <input type="radio" name="fuMenzen" value="menzen" checked>
-                                        <span class="radio-custom"></span>
-                                        門前
-                                    </label>
-                                    <label class="radio-label">
-                                        <input type="radio" name="fuMenzen" value="open">
-                                        <span class="radio-custom"></span>
-                                        副露
-                                    </label>
-                                </div>
-                            </fieldset>
+                            <p class="yaku-validation-note">門前か副露かは、上の「門前／副露」の選択を使います。幺九牌は1・9・字牌です。シャンポン待ちをロンで完成させた刻子は「明刻」を選んでください。役選択で七対子・平和を選んだときは、その固定符を使います。</p>
                             <div class="fu-calc-row">
                                 <label class="fu-calc-label" for="fuWait">待ち</label>
                                 <select id="fuWait" class="fu-calc-select">

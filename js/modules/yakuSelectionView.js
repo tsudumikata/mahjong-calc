@@ -54,7 +54,7 @@ export function renderYakuValidation(state, validation, elements) {
     const yakumanNote = document.getElementById('yakumanScoringNote');
     // 数え役満（通常役+ドラ）では一般役を加算するため、役満選択時だけ表示する。
     if (yakumanNote) yakumanNote.hidden = invalid || !breakdown.isYakuman;
-    renderHanBreakdown(breakdown, validation.valid);
+    renderHanBreakdown(breakdown, validation.valid, state.selectedYaku);
     renderDoraInputs(state);
     const invalidNames = new Set(validation.issues.flatMap(issue => issue.yaku));
     // Issue #6: 今の選択・和了条件に追加できない役をグレー表示する。判定は追加時の拒否と同じ
@@ -89,18 +89,29 @@ export function renderYakuValidation(state, validation, elements) {
     }
 }
 
-// 役とドラの内訳。ドラが0枚なら表示しない。
-function renderHanBreakdown({ yakuHan, doraHan, appliedDoraHan, isYakuman }, valid) {
+// 役とドラの内訳と、副露時の喰い下がり（Issue #49）。どちらもなければ表示しない。
+function renderHanBreakdown({ yakuHan, doraHan, appliedDoraHan, isYakuman, menzen }, valid, selectedYaku) {
     const element = document.getElementById('hanBreakdown');
     if (!element) return;
-    let text = '';
+    const lines = [];
     if (valid && doraHan > 0) {
-        if (yakuHan === 0) text = `ドラ${doraHan}翻は役がないため加算しません。`;
-        else if (isYakuman) text = `役満のためドラ${doraHan}翻は加算しません。`;
-        else text = `役 ${yakuHan}翻 + ドラ ${appliedDoraHan}翻`;
+        if (yakuHan === 0) lines.push(`ドラ${doraHan}翻は役がないため加算しません。`);
+        else if (isYakuman) lines.push(`役満のためドラ${doraHan}翻は加算しません。`);
+        else lines.push(`役 ${yakuHan}翻 + ドラ ${appliedDoraHan}翻`);
     }
-    element.textContent = text;
-    element.hidden = text === '';
+    // 役満では通常役を加算しないため、喰い下がりも表示しない。
+    const reduced = valid && !menzen && !isYakuman
+        ? yakuData.filter(yaku => selectedYaku.has(yaku.name) && Number.isInteger(yaku.openHan))
+        : [];
+    if (reduced.length) {
+        lines.push(`副露のため喰い下がり: ${reduced.map(yaku => `${yaku.name} ${yaku.han}→${yaku.openHan}翻`).join('、')}`);
+    }
+    element.replaceChildren();
+    lines.forEach((line, index) => {
+        if (index > 0) element.appendChild(document.createElement('br'));
+        element.appendChild(document.createTextNode(line));
+    });
+    element.hidden = lines.length === 0;
 }
 
 // 一括更新・リセット後もドラの表示と状態を揃える。裏ドラは立直時のみ増やせる。

@@ -13,7 +13,7 @@ export function setupStateSubscriptions(stateManager, domElements, yakuData) {
     const subscriptions = [];
 
     // 条件・前提役の解除や一括更新も同じ検証経路へ通す。
-    for (const key of ['selectedYaku', 'inputMode', 'winType', 'playerType', 'doraCount', 'redDoraCount', 'uraDoraCount', 'fuAutoEnabled', 'fuComposition']) {
+    for (const key of ['selectedYaku', 'inputMode', 'winType', 'playerType', 'menzen', 'doraCount', 'redDoraCount', 'uraDoraCount', 'fuAutoEnabled', 'fuComposition']) {
         subscriptions.push(stateManager.subscribe(key, () => {
             hideCalculationResult(domElements);
             clearYakuFeedback();
@@ -64,7 +64,7 @@ export function setupStateSubscriptions(stateManager, domElements, yakuData) {
 export function synchronizeYakuState(stateManager, domElements, yakuData) {
     const state = stateManager.getState();
     const validation = validateYakuSelection(state.selectedYaku, state);
-    updateSelectedYakuDisplay(state.selectedYaku, yakuData, domElements.selectedYakuList);
+    updateSelectedYakuDisplay(state.selectedYaku, yakuData, domElements.selectedYakuList, state.menzen !== false);
     stateManager.setTotalHan(validation.valid ? calculateTotalHanWithDora(state.selectedYaku, yakuData, state) : 0);
     if (validation.valid) {
         updateFuForYakuSelection(stateManager.getState(), stateManager);

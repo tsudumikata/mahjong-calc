@@ -40,6 +40,18 @@ export function generateYakuList(yakuDataArray, containerElement) {
 }
 
 /**
+ * 選択した役の翻数の表示（例: 「3翻」、副露の混一色は「2翻・喰い下がり」、役満は「役満」）
+ * @param {Object} yaku - 役データ
+ * @param {boolean} menzen - 門前なら true、副露なら false
+ * @returns {string}
+ */
+export function formatSelectedYakuHan(yaku, menzen = true) {
+    if (yaku.han >= 13) return '役満';
+    if (!menzen && Number.isInteger(yaku.openHan)) return `${yaku.openHan}翻・喰い下がり`;
+    return `${yaku.han}翻`;
+}
+
+/**
  * 計算結果を表示する
  * @param {Object} result - 計算結果オブジェクト
  * @param {number} han - 翻数
@@ -74,13 +86,15 @@ export function displayResult(result, han, fu, winType, playerType, inputMode = 
         `親子: ${playerTypeText}`, `点数名: ${result.name}`]
         .forEach(text => appendDetailItem(detailResultElement, text));
     
-    // 役選択モードの場合、選択された役も表示
+    // 役選択モードの場合、門前／副露と選択された役も表示
+    const menzen = doraInfo?.menzen !== false;
+    if (inputMode === 'yaku') appendDetailItem(detailResultElement, `門前／副露: ${menzen ? '門前' : '副露'}`);
     if (inputMode === 'yaku' && selectedYakuSet.size > 0) {
         appendDetailItem(detailResultElement, '選択された役:');
         Array.from(selectedYakuSet).forEach(yakuName => {
             const yaku = yakuDataArray.find(y => y.name === yakuName);
             if (yaku) {
-                appendDetailItem(detailResultElement, `・${yaku.name} (${yaku.hanText})`, 'yaku-detail');
+                appendDetailItem(detailResultElement, `・${yaku.name} (${formatSelectedYakuHan(yaku, menzen)})`, 'yaku-detail');
             }
         });
     }
@@ -112,8 +126,9 @@ export function displayResult(result, han, fu, winType, playerType, inputMode = 
  * @param {Set} selectedYakuSet - 選択された役のセット
  * @param {Array} yakuDataArray - 役データ配列
  * @param {HTMLElement} selectedYakuListElement - 選択役リスト表示要素
+ * @param {boolean} menzen - 門前なら true、副露なら false（副露は喰い下がりの翻数を表示）
  */
-export function updateSelectedYakuDisplay(selectedYakuSet, yakuDataArray, selectedYakuListElement) {
+export function updateSelectedYakuDisplay(selectedYakuSet, yakuDataArray, selectedYakuListElement, menzen = true) {
     if (selectedYakuSet.size === 0) {
         selectedYakuListElement.textContent = '役を選択してください';
         return;
@@ -121,7 +136,7 @@ export function updateSelectedYakuDisplay(selectedYakuSet, yakuDataArray, select
     
     const yakuNames = Array.from(selectedYakuSet).map(yakuName => {
         const yaku = yakuDataArray.find(y => y.name === yakuName);
-        return yaku ? `${yaku.name} (${yaku.hanText})` : null;
+        return yaku ? `${yaku.name} (${formatSelectedYakuHan(yaku, menzen)})` : null;
     }).filter(Boolean);
 
     selectedYakuListElement.replaceChildren();
